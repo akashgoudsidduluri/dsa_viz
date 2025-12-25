@@ -1,10 +1,40 @@
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useState, useMemo, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronRight, Code, Pause, Play, RotateCcw, SkipForward } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import ThemeToggle from "@/components/ui/theme-toggle";
-const algorithms = ["Bubble Sort", "Quick Sort", "Merge Sort", "Binary Search", "BFS", "DFS"];
+import * as Algo from "@/lib/algorithms";
+
+// Grouped sections for UI: label -> [algorithms]
+const algorithmSections: Record<string, string[]> = {
+  "Sorting": [
+    "Bubble Sort",
+    "Selection Sort",
+    "Insertion Sort",
+    "Merge Sort",
+    "Quick Sort",
+  ],
+  "Searching": [
+    "Linear Search",
+    "Binary Search",
+  ],
+  "Graphs": [
+    "BFS",
+    "DFS",
+    "Dijkstra",
+    "Topological Sort",
+  ],
+  "Linked List": [
+    "Reverse Linked List",
+    "Cycle Detection",
+    "Find Middle",
+  ],
+  "Tree": [
+    "In-Order DFS",
+    "Level Order BFS",
+  ],
+};
 
 type AlgorithmStep = {
   description: string;
@@ -137,6 +167,562 @@ const algorithmCode: Record<string, Record<string, string[]>> = {
       "}",
     ],
   },
+  "Selection Sort": {
+    Default: [
+      "function selectionSort(arr) {",
+      "  for i from 0 to n-1 {",
+      "    minIdx = i",
+      "    for j from i+1 to n-1 {",
+      "      if arr[j] < arr[minIdx] then minIdx = j",
+      "    }",
+      "    swap(arr[i], arr[minIdx])",
+      "  }",
+      "  return arr",
+      "}",
+    ],
+  },
+  "Insertion Sort": {
+    Default: [
+      "function insertionSort(arr) {",
+      "  for i from 1 to n-1 {",
+      "    key = arr[i]",
+      "    j = i-1",
+      "    while j >= 0 and arr[j] > key {",
+      "      arr[j+1] = arr[j]  // shift",
+      "      j = j - 1",
+      "    }",
+      "    arr[j+1] = key  // insert",
+      "  }",
+      "}",
+    ],
+  },
+  "Linear Search": {
+    Default: [
+      "function linearSearch(arr, target) {",
+      "  for i from 0 to n-1 {",
+      "    if arr[i] == target then return i  // found",
+      "  }",
+      "  return -1",
+      "}",
+    ],
+  },
+  "Two Sum": {
+    Default: [
+      "function twoSum(arr, target) {",
+      "  map = {}",
+      "  for i from 0 to n-1 {",
+      "    need = target - arr[i]",
+      "    if need in map then return [map[need], i]",
+      "    map[arr[i]] = i",
+      "  }",
+      "}",
+    ],
+  },
+  "Subarray Sum Equals K": {
+    Default: [
+      "function subarraySumEqualsK(arr, k) {",
+      "  map = {0: -1}",
+      "  sum = 0",
+      "  for i from 0 to n-1 {",
+      "    sum += arr[i]",
+      "    if sum - k in map then return [map[sum-k]+1, i]",
+      "    map[sum] = i",
+      "  }",
+      "}",
+    ],
+  },
+  "Reverse Linked List": {
+    Default: [
+      "function reverseList(head) {",
+      "  prev = null",
+      "  curr = head",
+      "  while curr != null {",
+      "    next = curr.next",
+      "    curr.next = prev",
+      "    prev = curr",
+      "    curr = next",
+      "  }",
+      "  return prev",
+      "}",
+    ],
+  },
+  "Cycle Detection": {
+    Default: [
+      "function hasCycle(head) {",
+      "  slow = head, fast = head",
+      "  while fast and fast.next {",
+      "    slow = slow.next",
+      "    fast = fast.next.next",
+      "    if slow == fast return true",
+      "  }",
+      "  return false",
+      "}",
+    ],
+  },
+  "Find Middle": {
+    Default: [
+      "function findMiddle(head) {",
+      "  slow = head; fast = head;",
+      "  while fast != null && fast.next != null {",
+      "    slow = slow.next  // move slow by 1",
+      "    fast = fast.next.next  // move fast by 2",
+      "  }",
+      "  return slow",
+      "}",
+    ],
+  },
+  "In-Order DFS": {
+    Default: [
+      "function inorder(root) {",
+      "  dfs(node) {",
+      "    if node == null return",
+      "    dfs(node.left)",
+      "    visit(node)",
+      "    dfs(node.right)",
+      "  }",
+      "}",
+    ],
+  },
+  "Level Order BFS": {
+    Default: [
+      "function levelOrder(root) {",
+      "  if not root return []",
+      "  queue = [root]",
+      "  while queue not empty {",
+      "    node = queue.shift()",
+      "    visit(node)",
+      "    push children to queue",
+      "  }",
+      "}",
+    ],
+  },
+  "Dijkstra": {
+    Default: [
+      "function dijkstra(graph, src) {",
+      "  dist = [inf..], dist[src] = 0",
+      "  while there are unvisited nodes {",
+      "    u = node with smallest dist",
+      "    visit(u)",
+      "    for edge u->v weight w {",
+      "      if dist[u] + w < dist[v] then dist[v] = dist[u] + w  // relax",
+      "    }",
+      "  }",
+      "  return dist",
+      "}",
+    ],
+  },
+  "Topological Sort": {
+    Default: [
+      "function kahn(adj) {",
+      "  indeg = compute indegrees",
+      "  q = nodes with indeg 0",
+      "  while q not empty {",
+      "    u = q.shift(); visit(u)",
+      "    for v of adj[u] { indeg[v]--; if indeg[v]==0 q.push(v) }",
+      "  }",
+      "}",
+    ],
+  },
+  "Prime Check": {
+    Default: [
+      "function isPrime(n) {",
+      "  if n < 2 return false",
+      "  for i from 2 to sqrt(n) {",
+      "    if n % i == 0 return false",
+      "  }",
+      "  return true",
+      "}",
+    ],
+  },
+  "Sieve of Eratosthenes": {
+    Default: [
+      "function sieve(n) {",
+      "  isPrime = [true..n]",
+      "  for p from 2 to sqrt(n) {",
+      "    if isPrime[p] then for mult = p*p to n step p mark not prime",
+      "  }",
+      "  return primes",
+      "}",
+    ],
+  },
+  "GCD": {
+    Default: [
+      "function gcd(a,b) {",
+      "  while b != 0 {",
+      "    t = a % b; a = b; b = t",
+      "  }",
+      "  return a",
+      "}",
+    ],
+  },
+  "LCM": {
+    Default: [
+      "function lcm(a,b) {",
+      "  return abs(a/gcd(a,b)*b)",
+      "}",
+    ],
+  },
+  "Binary Exponentiation": {
+    Default: [
+      "function binexp(b,e) {",
+      "  result = 1",
+      "  while e > 0 {",
+      "    if e & 1 result *= b",
+      "    b *= b; e >>= 1",
+      "  }",
+      "  return result",
+      "}",
+    ],
+  },
+  "Modular Exponentiation": {
+    Default: [
+      "function modexp(b,e,mod) {",
+      "  result = 1 % mod",
+      "  while e > 0 {",
+      "    if e & 1 result = (result * b) % mod",
+      "    b = (b*b)%mod; e >>= 1",
+      "  }",
+      "  return result",
+      "}",
+    ],
+  },
+  "nCr": {
+    Default: [
+      "function nCr(n,r) {",
+      "  r = min(r, n-r)",
+      "  numer = product(n, n-1, ..)",
+      "  denom = factorial(r)",
+      "  return numer/denom",
+      "}",
+    ],
+  },
+  "Count Set Bits": {
+    Default: [
+      "function countSetBits(x) {",
+      "  cnt = 0",
+      "  while x { x &= x-1; cnt++ }",
+      "  return cnt",
+      "}",
+    ],
+  },
+  "Is Power Of Two": {
+    Default: [
+      "function isPowerOfTwo(x) {",
+      "  return x > 0 and (x & (x-1)) == 0",
+      "}",
+    ],
+  },
+  "Single Number": {
+    Default: [
+      "function singleNumber(nums) {",
+      "  x = 0",
+      "  for n in nums x ^= n",
+      "  return x",
+      "}",
+    ],
+  },
+  "Generate Subsets": {
+    Default: [
+      "function subsets(nums) {",
+      "  for mask in 0..(1<<n)-1 {",
+      "    build subset from bits",
+      "  }",
+      "}",
+    ],
+  },
+};
+
+// Adapter: convert Algo.Step[] into AlgorithmStep[] used by this Visualizer
+const convertAlgoSteps = (
+  events: Algo.Step[],
+  initialArr: number[] = [64, 34, 25, 12, 22, 11, 90],
+  algoName?: string
+): AlgorithmStep[] => {
+  const arrState = initialArr.slice();
+  const steps: AlgorithmStep[] = [];
+
+  // precise mapping of event types to pseudocode line indices per algorithm
+  const codeMap: Record<string, Record<string, number[]>> = {
+    "Bubble Sort": { compare: [3], swap: [4] },
+    "Selection Sort": { compare: [3], swap: [6] },
+    "Insertion Sort": { compare: [4], shift: [5], insert: [6] },
+    "Merge Sort": { compare: [10, 11], insert: [12] },
+    "Quick Sort": { compare: [4, 5], swap: [6], movePointer: [2] },
+    "Binary Search": { compare: [2, 3], movePointer: [3] },
+    "Linear Search": { compare: [1], found: [2] },
+    "Two Sum": { movePointer: [2], found: [4] },
+    "Subarray Sum Equals K": { movePointer: [3], found: [4] },
+    "Reverse Linked List": { visit: [2], stack: [3] },
+    "Cycle Detection": { movePointer: [2], found: [5] },
+    "Find Middle": { movePointer: [3,4], found: [6] },
+    "In-Order DFS": { visit: [3] },
+    "Level Order BFS": { queue: [2, 3], visit: [4] },
+    "BFS": { queue: [2], visit: [4] },
+    "DFS": { stack: [2], visit: [4] },
+    "Dijkstra": { relax: [4], visit: [2] },
+    "Topological Sort": { queue: [2], visit: [3] },
+    "Prime Check": { compare: [2] },
+    "Sieve of Eratosthenes": { visit: [2] },
+    "GCD": { movePointer: [1] },
+    "LCM": {},
+    "Binary Exponentiation": { movePointer: [1], insert: [3] },
+    "Modular Exponentiation": { movePointer: [1], insert: [3] },
+    "nCr": { insert: [2, 3] },
+    "Count Set Bits": { movePointer: [1] },
+    "Is Power Of Two": { compare: [1] },
+    "Single Number": { movePointer: [1], insert: [2] },
+    "Generate Subsets": { insert: [1] },
+  };
+
+  for (const ev of events) {
+    switch (ev.type) {
+      case "compare": {
+        const i = (ev as any).i;
+        const j = (ev as any).j;
+        const codeLine = algoName && codeMap[algoName] && codeMap[algoName].compare ? codeMap[algoName].compare : [];
+        steps.push({
+          description: `Compare index ${i} and ${j}`,
+          highlight: [i, j].filter((x) => x >= 0),
+          array: [...arrState],
+          codeLine,
+        });
+        break;
+      }
+      case "swap": {
+        const { i, j } = ev as any;
+        [arrState[i], arrState[j]] = [arrState[j], arrState[i]];
+        const codeLine = algoName && codeMap[algoName] && codeMap[algoName].swap ? codeMap[algoName].swap : [];
+        steps.push({
+          description: `Swap index ${i} and ${j}`,
+          highlight: [i, j],
+          array: [...arrState],
+          codeLine,
+        });
+        break;
+      }
+      case "shift": {
+        const { from, to } = ev as any;
+        const val = arrState.splice(from, 1)[0];
+        arrState.splice(to, 0, val);
+        const codeLine = algoName && codeMap[algoName] && codeMap[algoName].shift ? codeMap[algoName].shift : [];
+        steps.push({
+          description: `Shift from ${from} to ${to}`,
+          highlight: [from, to],
+          array: [...arrState],
+          codeLine,
+        });
+        break;
+      }
+      case "insert": {
+        const { index, value } = ev as any;
+        if (index >= 0) arrState.splice(index, 0, value);
+        const codeLine = algoName && codeMap[algoName] && codeMap[algoName].insert ? codeMap[algoName].insert : [];
+        steps.push({
+          description: `Insert ${value} at ${index}`,
+          highlight: index >= 0 ? [index] : [],
+          array: [...arrState],
+          codeLine,
+        });
+        break;
+      }
+      case "movePointer": {
+        const { name, index } = ev as any;
+        const obj: AlgorithmStep = {
+          description: `Move pointer ${name} to ${index}`,
+          highlight: [],
+          array: [...arrState],
+          codeLine: [],
+        };
+        // convey common pointer names used by visualizer
+        if (name === "left") obj.left = index;
+        if (name === "right") obj.right = index;
+        if (name === "key" || name === "pivot") obj.pivot = index;
+        // map to codeLine via codeMap if available
+        const codeLine = algoName && codeMap[algoName] && codeMap[algoName].movePointer ? codeMap[algoName].movePointer : [];
+        if (codeLine.length) obj.codeLine = codeLine;
+        steps.push(obj);
+        break;
+      }
+      case "visit": {
+        const { nodeId } = ev as any;
+        steps.push({
+          description: `Visit ${nodeId}`,
+          highlight: [],
+          array: [...arrState],
+          visited: typeof nodeId === "number" ? [nodeId] : [],
+          codeLine: [],
+        });
+        break;
+      }
+      case "queue": {
+        const { state } = ev as any;
+        steps.push({
+          description: `Queue updated`,
+          highlight: [],
+          array: [...arrState],
+          queue: state as number[],
+          codeLine: [],
+        });
+        break;
+      }
+      case "stack": {
+        const { state } = ev as any;
+        steps.push({
+          description: `Stack updated`,
+          highlight: [],
+          array: [...arrState],
+          stack: state as number[],
+          codeLine: [],
+        });
+        break;
+      }
+      case "relax": {
+        const { node, distance } = ev as any;
+        steps.push({
+          description: `Relax node ${node}, distance=${distance}`,
+          highlight: [node],
+          array: [...arrState],
+          codeLine: [],
+        });
+        break;
+      }
+      case "found": {
+        const { index, node } = ev as any;
+        steps.push({
+          description: `Found ${index ?? node}`,
+          highlight: index !== undefined ? [index] : [],
+          array: [...arrState],
+          found: true,
+          mid: index,
+          codeLine: [],
+        });
+        break;
+      }
+      default:
+        steps.push({ description: "Event", highlight: [], array: [...arrState], codeLine: [] });
+    }
+  }
+
+  if (steps.length === 0) {
+    steps.push({ description: "No steps generated", highlight: [], array: [...arrState], codeLine: [] });
+  }
+
+  return steps;
+};
+
+// Input generators (module scope) so top-level generators can reuse them
+function createLinkedListFromArray(arr: number[]): Algo.ListNode | null {
+  if (!arr || arr.length === 0) return null;
+  let head: Algo.ListNode = { val: arr[0], next: null } as any;
+  let curr = head;
+  for (let i = 1; i < arr.length; i++) {
+    const node: Algo.ListNode = { val: arr[i], next: null } as any;
+    curr.next = node;
+    curr = node;
+  }
+  return head;
+}
+
+function createTreeFromArray(arr: number[]): Algo.TreeNode | null {
+  if (!arr || arr.length === 0) return null;
+  const nodes = arr.map((v, i) => ({ id: i, val: v, left: null as any, right: null as any }));
+  for (let i = 0; i < nodes.length; i++) {
+    const left = 2 * i + 1;
+    const right = 2 * i + 2;
+    if (left < nodes.length) nodes[i].left = nodes[left];
+    if (right < nodes.length) nodes[i].right = nodes[right];
+  }
+  return nodes[0];
+}
+
+function getInputForAlgorithm(name: string) {
+  const defaultArr = [64, 34, 25, 12, 22, 11, 90];
+  switch (name) {
+    case "Binary Search":
+      return { type: "array", data: [11, 12, 22, 25, 34, 64, 90] };
+    case "BFS":
+    case "DFS":
+    case "Dijkstra":
+    case "Topological Sort":
+      return { type: "graph", data: [[1,3],[2,4],[],[4],[5,6],[],[]] };
+    case "Reverse Linked List":
+    case "Cycle Detection":
+    case "Find Middle":
+      return { type: "linkedlist", data: createLinkedListFromArray([1,2,3,4,5,6,7]) };
+    case "In-Order DFS":
+    case "Level Order BFS":
+      return { type: "tree", data: createTreeFromArray([1,2,3,4,5,6,7]) };
+    default:
+      return { type: "array", data: defaultArr };
+  }
+}
+
+// Generate steps by delegating to the algorithms module where possible
+const generateFromAlgo = (name: string): AlgorithmStep[] => {
+  const defaultArr = [64, 34, 25, 12, 22, 11, 90];
+  try {
+    switch (name) {
+      case "Bubble Sort":
+        return convertAlgoSteps(Algo.bubbleSort(defaultArr).steps, defaultArr);
+      case "Selection Sort":
+        return convertAlgoSteps(Algo.selectionSort(defaultArr).steps, defaultArr);
+      case "Insertion Sort":
+        return convertAlgoSteps(Algo.insertionSort(defaultArr).steps, defaultArr);
+      case "Merge Sort":
+        return convertAlgoSteps(Algo.mergeSort(defaultArr).steps, defaultArr);
+      case "Quick Sort":
+        return convertAlgoSteps(Algo.quickSort(defaultArr).steps, defaultArr);
+      case "Linear Search":
+        return convertAlgoSteps(Algo.linearSearch(defaultArr, 25).steps, defaultArr);
+      case "Binary Search":
+        return convertAlgoSteps(Algo.binarySearch([11, 12, 22, 25, 34, 64, 90], 25).steps, [11, 12, 22, 25, 34, 64, 90]);
+      case "Reverse Linked List":
+        return convertAlgoSteps(Algo.reverseLinkedList(createLinkedListFromArray([1,2,3,4,5,6,7])).steps, defaultArr, "Reverse Linked List");
+      case "Cycle Detection":
+        return convertAlgoSteps(Algo.detectCycle(createLinkedListFromArray([1,2,3,4,5,6,7])).steps, defaultArr, "Cycle Detection");
+      case "Find Middle":
+        return convertAlgoSteps(Algo.findMiddle(createLinkedListFromArray([1,2,3,4,5,6,7])).steps, defaultArr, "Find Middle");
+      case "Two Sum":
+        return convertAlgoSteps(Algo.twoSum(defaultArr, 36).steps, defaultArr);
+      case "Subarray Sum Equals K":
+        return convertAlgoSteps(Algo.subarraySumEqualsK(defaultArr, 58).steps, defaultArr);
+      case "BFS":
+        return convertAlgoSteps(Algo.bfsGraph([[1, 3], [2, 4], [], [4], [5, 6], [], []], 0).steps, defaultArr, "Level Order BFS");
+      case "DFS":
+        return convertAlgoSteps(Algo.dfsGraph([[1, 3], [2, 4], [], [4], [5, 6], [], []], 0).steps, defaultArr, "In-Order DFS");
+      case "Dijkstra":
+        return convertAlgoSteps(Algo.dijkstra([[{ to: 1, weight: 1 }], [{ to: 2, weight: 1 }], []], 0).steps, defaultArr, "Dijkstra");
+      case "Topological Sort":
+        return convertAlgoSteps(Algo.topologicalSort([[1], [2], []]).steps, defaultArr, "Topological Sort");
+      case "Prime Check":
+        return convertAlgoSteps(Algo.isPrime(97).steps, defaultArr as any, "Prime Check");
+      case "Sieve of Eratosthenes":
+        return convertAlgoSteps(Algo.sieve(30).steps, defaultArr as any, "Sieve of Eratosthenes");
+      case "GCD":
+        return convertAlgoSteps(Algo.gcd(48, 18).steps, defaultArr as any, "GCD");
+      case "LCM":
+        return convertAlgoSteps(Algo.lcm(12, 18).steps, defaultArr as any, "LCM");
+      case "Binary Exponentiation":
+        return convertAlgoSteps(Algo.binaryExp(2, 10).steps, defaultArr as any, "Binary Exponentiation");
+      case "Modular Exponentiation":
+        return convertAlgoSteps(Algo.modExp(2, 10, 1000).steps, defaultArr as any, "Modular Exponentiation");
+      case "nCr":
+        return convertAlgoSteps(Algo.nCr(5, 2).steps, defaultArr as any, "nCr");
+      case "Count Set Bits":
+        return convertAlgoSteps(Algo.countSetBits(29).steps, defaultArr as any, "Count Set Bits");
+      case "Is Power Of Two":
+        return convertAlgoSteps(Algo.isPowerOfTwo(16).steps, defaultArr as any, "Is Power Of Two");
+      case "Single Number":
+        return convertAlgoSteps(Algo.singleNumber([2,2,1,3,3]).steps, defaultArr as any, "Single Number");
+      case "Generate Subsets":
+        return convertAlgoSteps(Algo.generateSubsets([1,2,3]).steps, defaultArr as any, "Generate Subsets");
+      default:
+        return [];
+    }
+  } catch (err) {
+    // If algo module call failed or isn't applicable, return empty steps
+    return [];
+  }
 };
 
 // Generate algorithm-specific steps
@@ -731,6 +1317,81 @@ const GraphVisualization = ({ step }: { step: AlgorithmStep }) => {
   );
 };
 
+const LinkedListVisualization = ({ step, head }: { step: AlgorithmStep; head: Algo.ListNode | null }) => {
+  // build linear array of nodes from head
+  const nodes: Array<{ id: number; val: number }> = [];
+  let curr = head;
+  let idx = 0;
+  while (curr) {
+    nodes.push({ id: idx, val: curr.val as number });
+    curr = curr.next as any;
+    idx++;
+  }
+
+  return (
+    <div className="flex items-center gap-3">
+      {nodes.map((n, i) => {
+        const isHighlighted = step.highlight.includes(n.val) || step.visited?.includes(n.val) || step.current === n.val || step.highlight.includes(i);
+        return (
+          <div key={i} className="flex items-center gap-2">
+            <motion.div
+              layout
+              transition={{ type: "spring", stiffness: 300, damping: 20 }}
+              className={`px-3 py-2 rounded border-2 ${isHighlighted ? "bg-primary text-primary-foreground border-primary" : "bg-secondary/50 text-muted-foreground border-border"}`}
+              animate={{ scale: isHighlighted ? 1.08 : 1, y: isHighlighted ? -6 : 0 }}
+            >
+              {n.val}
+            </motion.div>
+            {i < nodes.length - 1 && (
+              <svg width="24" height="16" viewBox="0 0 24 16" className="text-muted-foreground">
+                <line x1="0" y1="8" x2="18" y2="8" stroke="currentColor" strokeWidth="2" />
+                <polyline points="12,2 18,8 12,14" fill="none" stroke="currentColor" strokeWidth="2" />
+              </svg>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+const TreeVisualization = ({ step, root }: { step: AlgorithmStep; root: Algo.TreeNode | null }) => {
+  if (!root) return <div>No tree</div>;
+  // simple BFS layout positions
+  const nodes: Array<{ id: number | string; x: number; y: number; val: number }> = [];
+  const q: Array<{ node: any; x: number; y: number }> = [{ node: root, x: 160, y: 20 }];
+  while (q.length) {
+    const { node, x, y } = q.shift()!;
+    nodes.push({ id: node.id ?? node.val, x, y, val: node.val });
+    if (node.left) q.push({ node: node.left, x: x - 80, y: y + 80 });
+    if (node.right) q.push({ node: node.right, x: x + 80, y: y + 80 });
+  }
+
+  return (
+    <svg width="360" height="260">
+      {nodes.map((n, i) => (
+        <g key={i}>
+          {/* draw edge to children if they exist */}
+          {i >= 0 && (() => {
+            const node = nodes[i];
+            // find children indices by id mapping
+            const left = nodes.findIndex((x) => x.id === (node.id as number) * 2 + 1);
+            const right = nodes.findIndex((x) => x.id === (node.id as number) * 2 + 2);
+            return (
+              <g>
+                {left !== -1 && <line x1={node.x} y1={node.y + 20} x2={nodes[left].x} y2={nodes[left].y - 20} stroke="hsl(var(--muted-foreground))" strokeWidth="2" />}
+                {right !== -1 && <line x1={node.x} y1={node.y + 20} x2={nodes[right].x} y2={nodes[right].y - 20} stroke="hsl(var(--muted-foreground))" strokeWidth="2" />}
+              </g>
+            );
+          })()}
+          <motion.circle cx={n.x} cy={n.y} r={20} fill={step.visited?.includes(n.id as any) ? "hsl(var(--accent))" : "hsl(var(--secondary))"} stroke="hsl(var(--border))" animate={{ scale: step.visited?.includes(n.id as any) ? 1.08 : 1 }} />
+          <text x={n.x} y={n.y + 5} textAnchor="middle" fill="hsl(var(--foreground))">{n.val}</text>
+        </g>
+      ))}
+    </svg>
+  );
+};
+
 const CodePanel = ({ 
   code, 
   highlightedLines 
@@ -782,9 +1443,14 @@ export const Visualizer = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [speed, setSpeed] = useState(1); // 0.5x to 3x
   const [selectedApproach, setSelectedApproach] = useState<string>("Default");
+  const [openSection, setOpenSection] = useState<string | null>(null);
+  const [epoch, setEpoch] = useState(0); // bump to force re-generation of steps/inputs
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const steps = useMemo(() => {
+    // First try the algorithms module adapter; fallback to built-in generators
+    const modSteps = generateFromAlgo(selectedAlgo);
+    if (modSteps && modSteps.length > 0) return modSteps;
     switch (selectedAlgo) {
       case "Bubble Sort":
         return generateBubbleSortSteps();
@@ -801,7 +1467,22 @@ export const Visualizer = () => {
       default:
         return generateBubbleSortSteps();
     }
-  }, [selectedAlgo]);
+  }, [selectedAlgo, epoch]);
+
+  // determine visualization mode for selected algorithm
+  const getVisualType = (name: string) => {
+    if (algorithmSections["Graphs"].includes(name)) return "graph";
+    if (algorithmSections["Linked List"].includes(name)) return "linkedlist";
+    if (algorithmSections["Tree"].includes(name)) return "tree";
+    return "array";
+  };
+
+  const visualType = getVisualType(selectedAlgo);
+
+  // input generators for each visual type (hoisted as functions so they are available earlier)
+  // input helpers are provided at module scope
+
+  const currentInput = useMemo(() => getInputForAlgorithm(selectedAlgo), [selectedAlgo, epoch]);
 
   const currentStep = steps[step] || steps[0];
   const isGraphAlgo = selectedAlgo === "BFS" || selectedAlgo === "DFS";
@@ -858,6 +1539,8 @@ export const Visualizer = () => {
   const handleReset = () => {
     setStep(0);
     setIsPlaying(false);
+    // force re-generate steps and inputs to ensure mutated structures are recreated
+    setEpoch((e) => e + 1);
   };
 
   const handleAlgoChange = (algo: string) => {
@@ -894,23 +1577,54 @@ export const Visualizer = () => {
             className="glass-card p-4 rounded-xl"
           >
             <h3 className="text-lg font-semibold mb-4">Select Algorithm</h3>
-            <div className="space-y-2">
-              {algorithms.map((algo) => (
-                <button
-                  key={algo}
-                  onClick={() => handleAlgoChange(algo)}
-                  className={`w-full text-left px-3 py-2 rounded-lg transition-all text-sm ${
-                    selectedAlgo === algo
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-secondary/50 hover:bg-secondary text-foreground"
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium">{algo}</span>
-                    {selectedAlgo === algo && <ChevronRight className="w-4 h-4" />}
+            <div className="space-y-4">
+              {Object.entries(algorithmSections).map(([section, list]) => {
+                const isOpen = openSection === section;
+                return (
+                  <div key={section}>
+                    <button
+                      onClick={() => setOpenSection((prev) => (prev === section ? null : section))}
+                      aria-expanded={isOpen}
+                      className="w-full flex items-center justify-between px-2 py-1 rounded text-xs font-semibold text-muted-foreground mb-2 hover:bg-secondary/20"
+                    >
+                      <span>{section}</span>
+                      <ChevronRight className={`w-4 h-4 transform transition-transform ${isOpen ? 'rotate-90' : ''}`} />
+                    </button>
+
+                    <AnimatePresence initial={false}>
+                      {isOpen && (
+                        <motion.div
+                          key={`${section}-content`}
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.22, ease: 'easeInOut' }}
+                          className="overflow-hidden"
+                        >
+                          <div className="space-y-2 px-1 pb-2 pt-1">
+                            {list.map((algo) => (
+                              <button
+                                key={algo}
+                                onClick={() => handleAlgoChange(algo)}
+                                className={`w-full text-left px-3 py-2 rounded-lg transition-all text-sm ${
+                                  selectedAlgo === algo
+                                    ? "bg-primary text-primary-foreground"
+                                    : "bg-secondary/50 hover:bg-secondary text-foreground"
+                                }`}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <span className="font-medium">{algo}</span>
+                                  {selectedAlgo === algo && <ChevronRight className="w-4 h-4" />}
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
-                </button>
-              ))}
+                );
+              })}
             </div>
           </motion.div>
 
@@ -919,12 +1633,13 @@ export const Visualizer = () => {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
+            id="visualizer-board"
             className="lg:col-span-2 glass-card p-6 rounded-xl"
           >
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold">{selectedAlgo}</h3>
               <div className="flex items-center gap-4">
-                <ThemeToggle />
+                <ThemeToggle scope="element" elementId="visualizer-board" />
                 {/* Speed Control */}
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-muted-foreground">Speed:</span>
@@ -968,11 +1683,21 @@ export const Visualizer = () => {
 
             {/* Visualization */}
             <div className="min-h-[200px] flex items-center justify-center mb-6">
-              {isGraphAlgo ? (
+              {visualType === "graph" && (
                 <GraphVisualization step={currentStep} />
-              ) : (
+              )}
+
+              {visualType === "linkedlist" && (
+                <LinkedListVisualization step={currentStep} head={(currentInput.data as any) || null} />
+              )}
+
+              {visualType === "tree" && (
+                <TreeVisualization step={currentStep} root={(currentInput.data as any) || null} />
+              )}
+
+              {visualType === "array" && (
                 <div className="flex justify-center gap-2 flex-wrap">
-                  {(currentStep.array || [64, 34, 25, 12, 22, 11, 90]).map((val, i) => {
+                  {(currentStep.array || (currentInput.type === "array" ? (currentInput.data as number[]) : [64, 34, 25, 12, 22, 11, 90])).map((val, i) => {
                     const isHighlighted = currentStep.highlight.includes(i);
                     const isSorted = currentStep.sorted?.includes(i);
                     const isPivot = currentStep.pivot === i;

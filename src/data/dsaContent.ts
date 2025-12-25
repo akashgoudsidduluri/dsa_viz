@@ -571,6 +571,56 @@ export const dsaContent: Topic[] = [
   }
 ];
 
+// Mathematics & Number Theory topic (added per user request)
+dsaContent.push({
+  id: "math_number_theory",
+  title: "Mathematics & Number Theory",
+  description: "Core mathematical tools needed for coding interviews",
+  lesson_count: 26,
+  difficulty_sections: [
+    {
+      level: "Easy",
+      problems: [
+        { id: "prime_check", title: "Prime Check (√n)", core_pattern: "Primes", difficulty: "Easy" },
+        { id: "sieve_eratosthenes", title: "Sieve of Eratosthenes", core_pattern: "Sieve", difficulty: "Easy" },
+        { id: "prime_factorization", title: "Prime Factorization", core_pattern: "Factorization", difficulty: "Easy" },
+        { id: "count_divisors", title: "Count Divisors", core_pattern: "Divisors", difficulty: "Easy" },
+        { id: "sum_divisors", title: "Sum of Divisors", core_pattern: "Divisors", difficulty: "Easy" },
+        { id: "gcd_euclid", title: "Euclid GCD", core_pattern: "GCD", difficulty: "Easy" },
+        { id: "lcm_using_gcd", title: "LCM using GCD", core_pattern: "LCM", difficulty: "Easy" },
+        { id: "fast_power", title: "Fast Power (Binary Exponentiation)", core_pattern: "Binary Exponentiation", difficulty: "Easy" },
+        { id: "prefix_sum_math", title: "Prefix Sum (Math)", core_pattern: "Prefix Sum", difficulty: "Easy" },
+        { id: "difference_array", title: "Difference Array", core_pattern: "Difference Array", difficulty: "Easy" }
+      ]
+    },
+    {
+      level: "Medium",
+      problems: [
+        { id: "extended_euclid", title: "Extended Euclid (basic)", core_pattern: "Extended GCD", difficulty: "Medium" },
+        { id: "modular_inverse", title: "Modular Inverse (intro)", core_pattern: "Modular Arithmetic", difficulty: "Medium" },
+        { id: "combinatorics_factorials", title: "Factorials", core_pattern: "Combinatorics", difficulty: "Medium" },
+        { id: "permutations_nPr", title: "Permutations (nPr)", core_pattern: "Combinatorics", difficulty: "Medium" },
+        { id: "combinations_nCr", title: "Combinations (nCr)", core_pattern: "Combinatorics", difficulty: "Medium" },
+        { id: "pascal_triangle", title: "Pascal's Triangle", core_pattern: "Combinatorics", difficulty: "Medium" },
+        { id: "bit_binary_representation", title: "Binary Representation", core_pattern: "Bit Math", difficulty: "Medium" },
+        { id: "xor_tricks", title: "XOR tricks", core_pattern: "Bit Math", difficulty: "Medium" },
+        { id: "count_set_bits", title: "Count set bits", core_pattern: "Bit Math", difficulty: "Medium" },
+        { id: "subset_mask", title: "Subset mask", core_pattern: "Bit Math", difficulty: "Medium" }
+      ]
+    },
+    {
+      level: "Medium",
+      problems: [
+        { id: "range_update", title: "Range Update", core_pattern: "Range Math", difficulty: "Medium" },
+        { id: "overflow_safety", title: "Overflow Safety", core_pattern: "Numeric Safety", difficulty: "Medium" },
+        { id: "geometry_distance", title: "Distance formula", core_pattern: "Geometry", difficulty: "Medium" },
+        { id: "triangle_check", title: "Triangle check", core_pattern: "Geometry", difficulty: "Medium" },
+        { id: "orientation_basics", title: "Orientation basics", core_pattern: "Geometry", difficulty: "Medium" }
+      ]
+    }
+  ]
+});
+
 // Additional topics: Heaps and Greedy algorithms with problems and clear approach explanations
 export const additionalTopics: Topic[] = [
   {
