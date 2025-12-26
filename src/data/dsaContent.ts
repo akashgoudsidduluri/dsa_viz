@@ -477,31 +477,398 @@ export const dsaContent: Topic[] = [
   {
     id: "trees",
     title: "Trees",
-    description: "Binary trees, BST, and tree traversal algorithms.",
+    description: "Binary trees, BST, and tree traversal algorithms. Trees are hierarchical data structures with a root node and child nodes forming a parent-child relationship.",
     lesson_count: 18,
     difficulty_sections: [
       {
         level: "Easy",
         problems: [
-          { id: "invert_binary_tree", title: "Invert Binary Tree", core_pattern: "DFS", difficulty: "Easy", approaches: [{ name: "Recursive DFS", idea: "Swap children then recurse", time_complexity: "O(n)", space_complexity: "O(h)" }] },
-          { id: "max_depth", title: "Maximum Depth of Binary Tree", core_pattern: "DFS", difficulty: "Easy", approaches: [{ name: "Recursive", idea: "Return 1 + max of children depths", time_complexity: "O(n)", space_complexity: "O(h)" }] },
-          { id: "same_tree", title: "Same Tree", core_pattern: "DFS", difficulty: "Easy", approaches: [{ name: "Recursive Comparison", idea: "Compare node values and recurse", time_complexity: "O(n)", space_complexity: "O(h)" }] }
+          { 
+            id: "invert_binary_tree", 
+            title: "Invert Binary Tree", 
+            why_it_matters: "Classic recursive problem that tests understanding of tree structure manipulation. Asked frequently as a warmup question.",
+            core_pattern: "DFS / Recursion", 
+            tags: ["tree", "recursion", "dfs"],
+            difficulty: "Easy",
+            approaches: [
+              { 
+                name: "Recursive DFS", 
+                idea: "At each node, swap its left and right children, then recursively invert the subtrees. The base case is when node is null.", 
+                steps: [
+                  "If node is null, return null (base case)",
+                  "Recursively invert the left subtree",
+                  "Recursively invert the right subtree",
+                  "Swap node.left and node.right",
+                  "Return the node"
+                ],
+                time_complexity: "O(n) - visit each node once",
+                space_complexity: "O(h) - recursion stack depth equals tree height, O(log n) for balanced, O(n) for skewed",
+                when_to_use: "Default approach, clean and intuitive"
+              },
+              {
+                name: "Iterative BFS",
+                idea: "Use a queue to process nodes level by level. For each node, swap its children before adding them to the queue.",
+                steps: [
+                  "Initialize queue with root",
+                  "While queue is not empty, dequeue a node",
+                  "Swap its left and right children",
+                  "Enqueue left and right children if they exist"
+                ],
+                time_complexity: "O(n)",
+                space_complexity: "O(n) - queue can hold up to n/2 nodes at the last level",
+                when_to_use: "When you want to avoid recursion or need level-order processing"
+              }
+            ],
+            complexity_summary: "Both approaches are O(n) time. Recursive uses O(h) space, iterative uses O(n) space.",
+            interview_tip: "Start with recursive solution, mention you can also do it iteratively. Discuss space trade-offs."
+          },
+          { 
+            id: "max_depth", 
+            title: "Maximum Depth of Binary Tree", 
+            why_it_matters: "Fundamental tree problem that introduces the concept of tree height. Foundation for many harder problems.",
+            core_pattern: "DFS / Recursion", 
+            tags: ["tree", "recursion", "dfs"],
+            difficulty: "Easy",
+            approaches: [
+              { 
+                name: "Recursive DFS (Post-order)", 
+                idea: "The depth of a tree is 1 + max(depth of left subtree, depth of right subtree). Null nodes have depth 0.", 
+                steps: [
+                  "If node is null, return 0",
+                  "Recursively get depth of left subtree",
+                  "Recursively get depth of right subtree",
+                  "Return 1 + max(leftDepth, rightDepth)"
+                ],
+                time_complexity: "O(n) - visit each node once",
+                space_complexity: "O(h) - recursion stack",
+                when_to_use: "Most intuitive approach for tree depth problems"
+              },
+              {
+                name: "Iterative BFS",
+                idea: "Count the number of levels using level-order traversal. Each level adds 1 to depth.",
+                steps: [
+                  "Initialize queue with root, depth = 0",
+                  "While queue not empty, process all nodes at current level",
+                  "Increment depth after processing each level",
+                  "Return depth when queue is empty"
+                ],
+                time_complexity: "O(n)",
+                space_complexity: "O(n) - queue width",
+                when_to_use: "When you need to track level information explicitly"
+              }
+            ],
+            complexity_summary: "Both O(n) time. DFS uses O(h) space, BFS uses O(w) space where w is max width.",
+            interview_tip: "Mention the difference between height (edges) and depth (nodes). Some definitions vary."
+          },
+          { 
+            id: "same_tree", 
+            title: "Same Tree", 
+            why_it_matters: "Tests ability to compare two data structures simultaneously. Good introduction to parallel tree traversal.",
+            core_pattern: "DFS / Parallel Traversal", 
+            tags: ["tree", "recursion", "dfs"],
+            difficulty: "Easy",
+            approaches: [
+              { 
+                name: "Recursive Comparison", 
+                idea: "Two trees are identical if: roots have same value AND left subtrees are identical AND right subtrees are identical.", 
+                steps: [
+                  "If both nodes are null, return true (both empty)",
+                  "If one is null and other is not, return false (structure differs)",
+                  "If values differ, return false",
+                  "Recursively compare left subtrees AND right subtrees"
+                ],
+                time_complexity: "O(min(n, m)) - stop at first difference",
+                space_complexity: "O(min(h1, h2)) - recursion depth",
+                when_to_use: "Standard approach for tree comparison"
+              }
+            ],
+            complexity_summary: "O(n) time in worst case (identical trees), O(h) space for recursion.",
+            interview_tip: "Handle null cases first. This pattern extends to checking symmetric trees, subtree matching, etc."
+          },
+          {
+            id: "diameter_binary_tree",
+            title: "Diameter of Binary Tree",
+            why_it_matters: "Introduces the concept of global vs local optimization in trees. The longest path may not pass through root.",
+            core_pattern: "DFS with Global Variable",
+            tags: ["tree", "recursion", "dfs"],
+            difficulty: "Easy",
+            approaches: [
+              {
+                name: "DFS with Height Tracking",
+                idea: "At each node, the diameter passing through it = left height + right height. Track the global maximum while computing heights.",
+                steps: [
+                  "Initialize global maxDiameter = 0",
+                  "Define height(node) that returns height of subtree",
+                  "For each node: localDiameter = height(left) + height(right)",
+                  "Update maxDiameter if localDiameter is larger",
+                  "Return maxDiameter after traversing all nodes"
+                ],
+                time_complexity: "O(n) - each node visited once",
+                space_complexity: "O(h) - recursion stack",
+                when_to_use: "When you need to track a global property while computing local properties"
+              }
+            ],
+            complexity_summary: "O(n) time, O(h) space. Key insight: diameter through a node = left_height + right_height.",
+            interview_tip: "Common mistake: only checking diameter through root. The longest path might be entirely in a subtree."
+          }
         ]
       },
       {
         level: "Medium",
         problems: [
-          { id: "level_order", title: "Binary Tree Level Order Traversal", core_pattern: "BFS", difficulty: "Medium", approaches: [{ name: "BFS with Queue", idea: "Process level by level", time_complexity: "O(n)", space_complexity: "O(n)" }] },
-          { id: "validate_bst", title: "Validate BST", core_pattern: "DFS with Range", difficulty: "Medium", approaches: [{ name: "Range Check", idea: "Pass valid range to each node", time_complexity: "O(n)", space_complexity: "O(h)" }] },
-          { id: "lca", title: "Lowest Common Ancestor", core_pattern: "DFS", difficulty: "Medium", approaches: [{ name: "Recursive Search", idea: "Return node if found, propagate up", time_complexity: "O(n)", space_complexity: "O(h)" }] },
-          { id: "construct_tree", title: "Construct Tree from Preorder/Inorder", core_pattern: "Divide and Conquer", difficulty: "Medium", approaches: [{ name: "HashMap + Recursion", idea: "Use inorder to find root position", time_complexity: "O(n)", space_complexity: "O(n)" }] }
+          { 
+            id: "level_order", 
+            title: "Binary Tree Level Order Traversal", 
+            why_it_matters: "Foundation for all level-based tree problems. BFS is the natural fit for level-order processing.",
+            core_pattern: "BFS with Queue", 
+            tags: ["tree", "bfs", "queue"],
+            difficulty: "Medium",
+            approaches: [
+              { 
+                name: "BFS with Level Tracking", 
+                idea: "Use a queue to process nodes. Track level boundaries by processing all nodes at current level before moving to next.", 
+                steps: [
+                  "Initialize queue with root, result = []",
+                  "While queue not empty: get current level size",
+                  "Process exactly that many nodes (one level)",
+                  "Add each node's value to current level array",
+                  "Enqueue children for next level",
+                  "Add level array to result"
+                ],
+                time_complexity: "O(n) - visit each node once",
+                space_complexity: "O(n) - queue can hold n/2 nodes at widest level",
+                when_to_use: "Any problem requiring level-by-level processing"
+              },
+              {
+                name: "DFS with Level Parameter",
+                idea: "Pass level index during DFS. Add to appropriate result index based on level.",
+                steps: [
+                  "Create result array",
+                  "DFS(node, level): if new level, add new array to result",
+                  "Add node.val to result[level]",
+                  "Recurse with level + 1 for children"
+                ],
+                time_complexity: "O(n)",
+                space_complexity: "O(h) recursion + O(n) result",
+                when_to_use: "When you prefer recursive style or need pre/post-order within levels"
+              }
+            ],
+            complexity_summary: "Both O(n) time. BFS more intuitive for level problems, DFS useful for variations.",
+            interview_tip: "Mention variations: zigzag order, right side view, level averages all use similar pattern."
+          },
+          { 
+            id: "validate_bst", 
+            title: "Validate Binary Search Tree", 
+            why_it_matters: "Tests understanding of BST property: ALL nodes in left subtree must be < root, ALL in right must be > root.",
+            core_pattern: "DFS with Valid Range", 
+            tags: ["tree", "bst", "dfs", "recursion"],
+            difficulty: "Medium",
+            approaches: [
+              { 
+                name: "Range Validation (Min/Max Bounds)", 
+                idea: "Each node must fall within a valid range. Going left shrinks upper bound, going right shrinks lower bound.", 
+                steps: [
+                  "validate(node, min, max): if null return true",
+                  "If node.val <= min or node.val >= max, return false",
+                  "Recurse left with (min, node.val) as new range",
+                  "Recurse right with (node.val, max) as new range",
+                  "Start with (-∞, +∞)"
+                ],
+                time_complexity: "O(n) - visit each node once",
+                space_complexity: "O(h) - recursion stack",
+                when_to_use: "Most intuitive and commonly expected solution"
+              },
+              {
+                name: "Inorder Traversal Check",
+                idea: "BST inorder traversal produces sorted sequence. Track previous value and ensure current > previous.",
+                steps: [
+                  "Perform inorder traversal (left, root, right)",
+                  "Track prev value (initially -∞)",
+                  "At each node: if node.val <= prev, return false",
+                  "Update prev = node.val",
+                  "Continue traversal"
+                ],
+                time_complexity: "O(n)",
+                space_complexity: "O(h)",
+                when_to_use: "When you want to leverage inorder property of BST"
+              }
+            ],
+            complexity_summary: "Both O(n) time, O(h) space. Range method is more explicit about BST invariant.",
+            interview_tip: "Common mistake: only comparing node with immediate children. Must compare with ALL ancestors."
+          },
+          { 
+            id: "lca", 
+            title: "Lowest Common Ancestor of Binary Tree", 
+            why_it_matters: "Classic interview problem. LCA appears in many applications: file systems, network routing, version control.",
+            core_pattern: "DFS / Post-order", 
+            tags: ["tree", "recursion", "dfs"],
+            difficulty: "Medium",
+            approaches: [
+              { 
+                name: "Recursive Post-order", 
+                idea: "Search for p and q. If a node is p or q, return it. If left and right both return non-null, current node is LCA.", 
+                steps: [
+                  "If node is null, return null",
+                  "If node equals p or q, return node",
+                  "Recursively search left subtree",
+                  "Recursively search right subtree",
+                  "If both left and right are non-null, node is LCA",
+                  "Otherwise return whichever is non-null"
+                ],
+                time_complexity: "O(n) - may need to search entire tree",
+                space_complexity: "O(h) - recursion stack",
+                when_to_use: "Standard approach for LCA in binary tree (not BST)"
+              }
+            ],
+            complexity_summary: "O(n) time, O(h) space. For BST, can be O(h) time using BST property.",
+            interview_tip: "Clarify if it's BST (can use value comparisons) or general binary tree (need full search)."
+          },
+          { 
+            id: "construct_tree", 
+            title: "Construct Tree from Preorder and Inorder", 
+            why_it_matters: "Tests deep understanding of tree traversals. Preorder gives root, inorder gives left/right split.",
+            core_pattern: "Divide and Conquer with HashMap", 
+            tags: ["tree", "recursion", "divide-and-conquer"],
+            difficulty: "Medium",
+            approaches: [
+              { 
+                name: "Recursive with Index Map", 
+                idea: "Preorder first element is root. Find root in inorder to determine left/right subtree sizes. Use hashmap for O(1) lookup.", 
+                steps: [
+                  "Build hashmap: inorder value → index",
+                  "build(preStart, preEnd, inStart, inEnd)",
+                  "root = preorder[preStart]",
+                  "Find rootIdx in inorder using hashmap",
+                  "leftSize = rootIdx - inStart",
+                  "Recursively build left and right subtrees with appropriate ranges"
+                ],
+                time_complexity: "O(n) - each node processed once",
+                space_complexity: "O(n) - hashmap + O(h) recursion",
+                when_to_use: "Standard approach for tree construction problems"
+              }
+            ],
+            complexity_summary: "O(n) time and space. Without hashmap would be O(n²) due to linear search.",
+            interview_tip: "Draw out example with indices. Clarify that values are unique. Similar pattern for postorder+inorder."
+          },
+          {
+            id: "path_sum_ii",
+            title: "Path Sum II (Root to Leaf Paths)",
+            why_it_matters: "Introduces backtracking in trees. Pattern extends to all path-finding problems.",
+            core_pattern: "DFS + Backtracking",
+            tags: ["tree", "dfs", "backtracking"],
+            difficulty: "Medium",
+            approaches: [
+              {
+                name: "DFS with Path Tracking",
+                idea: "Maintain current path as you traverse. Add to result when reaching a leaf with target sum. Backtrack by removing last element.",
+                steps: [
+                  "DFS(node, remainingSum, currentPath)",
+                  "Add node.val to currentPath",
+                  "If leaf and remainingSum == node.val, add path copy to result",
+                  "Recurse on children with remainingSum - node.val",
+                  "Remove node.val from path (backtrack)"
+                ],
+                time_complexity: "O(n²) - visit n nodes, copy paths up to O(n) length",
+                space_complexity: "O(n) - path storage + recursion",
+                when_to_use: "When you need to find all paths, not just check existence"
+              }
+            ],
+            complexity_summary: "O(n²) worst case time due to path copying. O(n) space for path + recursion.",
+            interview_tip: "Remember to COPY the path before adding to result, otherwise it will be modified later."
+          }
         ]
       },
       {
         level: "Hard",
         problems: [
-          { id: "serialize_tree", title: "Serialize and Deserialize Binary Tree", core_pattern: "BFS/DFS", difficulty: "Hard", approaches: [{ name: "Preorder with Nulls", idea: "Encode null as special character", time_complexity: "O(n)", space_complexity: "O(n)" }] },
-          { id: "binary_tree_max_path", title: "Binary Tree Maximum Path Sum", core_pattern: "DFS", difficulty: "Hard", approaches: [{ name: "Post-order DFS", idea: "Track max path through each node", time_complexity: "O(n)", space_complexity: "O(h)" }] }
+          { 
+            id: "serialize_tree", 
+            title: "Serialize and Deserialize Binary Tree", 
+            why_it_matters: "Tests ability to design encoding scheme. Real-world application in distributed systems, caching.",
+            core_pattern: "BFS or Preorder DFS", 
+            tags: ["tree", "design", "dfs", "bfs"],
+            difficulty: "Hard",
+            approaches: [
+              { 
+                name: "Preorder DFS with Null Markers", 
+                idea: "Serialize using preorder (root, left, right). Mark null nodes with special character. Deserialize by reading tokens in same order.", 
+                steps: [
+                  "Serialize: preorder traversal, output value or 'null'",
+                  "Join with delimiter (comma)",
+                  "Deserialize: split by delimiter into queue/array",
+                  "Build tree by consuming tokens in preorder",
+                  "If token is 'null', return null",
+                  "Else create node, recursively build left then right"
+                ],
+                time_complexity: "O(n) for both operations",
+                space_complexity: "O(n) for the string/tokens",
+                when_to_use: "Clean recursive solution, easy to implement"
+              },
+              {
+                name: "BFS Level-order",
+                idea: "Serialize level by level, including nulls for missing children. Deserialize by processing nodes level by level.",
+                time_complexity: "O(n)",
+                space_complexity: "O(n)",
+                when_to_use: "When you want level-order representation"
+              }
+            ],
+            complexity_summary: "Both O(n) time and space. Preorder is simpler to implement.",
+            interview_tip: "Clarify format: comma-separated, JSON-like, etc. Mention handling of negative numbers and multi-digit values."
+          },
+          { 
+            id: "binary_tree_max_path", 
+            title: "Binary Tree Maximum Path Sum", 
+            why_it_matters: "Hard problem combining global tracking with local computation. Path can start and end at any nodes.",
+            core_pattern: "DFS with Global Maximum", 
+            tags: ["tree", "dfs", "dynamic-programming"],
+            difficulty: "Hard",
+            approaches: [
+              { 
+                name: "Post-order DFS with Path Gain", 
+                idea: "At each node, compute max 'gain' if path continues upward (can only go one direction). Track global max for paths that bend at current node.", 
+                steps: [
+                  "maxSum = -infinity (global variable)",
+                  "maxGain(node): returns max contribution if continuing upward",
+                  "leftGain = max(0, maxGain(left)) - ignore negative gains",
+                  "rightGain = max(0, maxGain(right))",
+                  "localMax = node.val + leftGain + rightGain (path bends here)",
+                  "Update global maxSum if localMax is larger",
+                  "Return node.val + max(leftGain, rightGain) (can only go one way up)"
+                ],
+                time_complexity: "O(n) - visit each node once",
+                space_complexity: "O(h) - recursion stack",
+                when_to_use: "Standard approach for max path sum variants"
+              }
+            ],
+            complexity_summary: "O(n) time, O(h) space. Key insight: path through node = val + leftGain + rightGain, but continuing path can only pick one child.",
+            interview_tip: "Draw examples. Explain why we use max(0, gain) - negative paths should be ignored. This is similar to Kadane's algorithm intuition."
+          },
+          {
+            id: "vertical_order",
+            title: "Binary Tree Vertical Order Traversal",
+            why_it_matters: "Combines BFS with coordinate tracking. Tests ability to handle complex ordering requirements.",
+            core_pattern: "BFS + Column Tracking",
+            tags: ["tree", "bfs", "hash-map"],
+            difficulty: "Hard",
+            approaches: [
+              {
+                name: "BFS with Column Index",
+                idea: "Assign column index to each node (root=0, left=col-1, right=col+1). Group by column, maintaining top-to-bottom order within column.",
+                steps: [
+                  "BFS traversal, tracking (node, column) pairs",
+                  "Use HashMap: column → list of values",
+                  "Track minCol and maxCol for final ordering",
+                  "Iterate columns from minCol to maxCol",
+                  "BFS ensures top-to-bottom order within each column"
+                ],
+                time_complexity: "O(n)",
+                space_complexity: "O(n)",
+                when_to_use: "When vertical ordering is required"
+              }
+            ],
+            complexity_summary: "O(n) time and space. BFS naturally handles same-row ordering.",
+            interview_tip: "Clarify tie-breaking: same row AND same column - should it be left-to-right or by value?"
+          }
         ]
       }
     ]

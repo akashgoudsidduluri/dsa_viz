@@ -7,6 +7,9 @@ import ThemeToggle from "@/components/ui/theme-toggle";
 import * as Algo from "@/lib/algorithms";
 
 // Grouped sections for UI: label -> [algorithms]
+// Default open section for better UX
+const DEFAULT_OPEN_SECTION = "Sorting";
+
 const algorithmSections: Record<string, string[]> = {
   "Sorting": [
     "Bubble Sort",
@@ -732,7 +735,7 @@ const generateBubbleSortSteps = (): AlgorithmStep[] => {
   const sorted: number[] = [];
   
   steps.push({
-    description: "Initial array - we'll compare adjacent elements and swap if needed",
+    description: "🎯 Starting Bubble Sort: Compare adjacent pairs and swap if left > right. Larger elements 'bubble up' to the end.",
     highlight: [],
     array: [...arr],
     sorted: [],
@@ -740,9 +743,17 @@ const generateBubbleSortSteps = (): AlgorithmStep[] => {
   });
 
   for (let i = 0; i < arr.length - 1; i++) {
+    steps.push({
+      description: `📍 Pass ${i + 1}: Scan from start to index ${arr.length - 1 - i}. After this pass, position ${arr.length - 1 - i} will have correct element.`,
+      highlight: [],
+      array: [...arr],
+      sorted: [...sorted],
+      codeLine: [1],
+    });
+
     for (let j = 0; j < arr.length - i - 1; j++) {
       steps.push({
-        description: `Compare ${arr[j]} and ${arr[j + 1]}`,
+        description: `🔍 Compare arr[${j}]=${arr[j]} with arr[${j + 1}]=${arr[j + 1]}`,
         highlight: [j, j + 1],
         array: [...arr],
         sorted: [...sorted],
@@ -750,17 +761,19 @@ const generateBubbleSortSteps = (): AlgorithmStep[] => {
       });
       
       if (arr[j] > arr[j + 1]) {
+        const before = arr[j];
+        const after = arr[j + 1];
         [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
         steps.push({
-          description: `${arr[j + 1]} > ${arr[j]}, swap them`,
+          description: `🔄 Swap! ${before} > ${after}, so swap positions. Array updated.`,
           highlight: [j, j + 1],
           array: [...arr],
           sorted: [...sorted],
-          codeLine: [3, 4],
+          codeLine: [4],
         });
       } else {
         steps.push({
-          description: `${arr[j]} ≤ ${arr[j + 1]}, no swap needed`,
+          description: `✓ No swap needed: ${arr[j]} ≤ ${arr[j + 1]}, already in order.`,
           highlight: [j, j + 1],
           array: [...arr],
           sorted: [...sorted],
@@ -769,15 +782,22 @@ const generateBubbleSortSteps = (): AlgorithmStep[] => {
       }
     }
     sorted.unshift(arr.length - 1 - i);
+    steps.push({
+      description: `✅ Pass ${i + 1} complete! Element ${arr[arr.length - 1 - i]} is now in its final position at index ${arr.length - 1 - i}.`,
+      highlight: [arr.length - 1 - i],
+      array: [...arr],
+      sorted: [...sorted],
+      codeLine: [6, 7],
+    });
   }
   sorted.unshift(0);
   
   steps.push({
-    description: "Array is now sorted!",
+    description: "🎉 Bubble Sort complete! Array is now fully sorted in ascending order.",
     highlight: [],
     array: [...arr],
     sorted: Array.from({ length: arr.length }, (_, i) => i),
-    codeLine: [8],
+    codeLine: [8, 9],
   });
 
   return steps;
@@ -970,7 +990,7 @@ const generateBinarySearchSteps = (): AlgorithmStep[] => {
   const steps: AlgorithmStep[] = [];
 
   steps.push({
-    description: `Sorted array - searching for ${target} using Binary Search`,
+    description: `🎯 Binary Search: Find ${target} in a sorted array. We repeatedly halve the search space by comparing with the middle element.`,
     highlight: [],
     array: arr,
     sorted: Array.from({ length: arr.length }, (_, i) => i),
@@ -984,7 +1004,7 @@ const generateBinarySearchSteps = (): AlgorithmStep[] => {
     const mid = Math.floor((left + right) / 2);
     
     steps.push({
-      description: `Check middle element at index ${mid}: value = ${arr[mid]}`,
+      description: `📍 Search range: [${left}, ${right}]. Middle index = ⌊(${left}+${right})/2⌋ = ${mid}. Value at mid = ${arr[mid]}`,
       highlight: [mid],
       array: arr,
       left,
@@ -995,7 +1015,7 @@ const generateBinarySearchSteps = (): AlgorithmStep[] => {
 
     if (arr[mid] === target) {
       steps.push({
-        description: `Found ${target} at index ${mid}!`,
+        description: `🎉 Found! arr[${mid}] = ${target}. Target located at index ${mid}!`,
         highlight: [mid],
         array: arr,
         found: true,
@@ -1005,7 +1025,7 @@ const generateBinarySearchSteps = (): AlgorithmStep[] => {
       break;
     } else if (arr[mid] < target) {
       steps.push({
-        description: `${arr[mid]} < ${target}, search right half`,
+        description: `➡️ arr[${mid}]=${arr[mid]} < ${target}. Target must be in RIGHT half. Update left = ${mid + 1}`,
         highlight: Array.from({ length: right - mid }, (_, i) => mid + 1 + i),
         array: arr,
         left: mid + 1,
@@ -1015,7 +1035,7 @@ const generateBinarySearchSteps = (): AlgorithmStep[] => {
       left = mid + 1;
     } else {
       steps.push({
-        description: `${arr[mid]} > ${target}, search left half`,
+        description: `⬅️ arr[${mid}]=${arr[mid]} > ${target}. Target must be in LEFT half. Update right = ${mid - 1}`,
         highlight: Array.from({ length: mid - left }, (_, i) => left + i),
         array: arr,
         left,
@@ -1033,7 +1053,7 @@ const generateBFSSteps = (): AlgorithmStep[] => {
   const steps: AlgorithmStep[] = [];
   
   steps.push({
-    description: "Graph with 7 nodes - BFS explores level by level using a queue",
+    description: "🎯 BFS (Breadth-First Search): Explores all neighbors at current depth before moving deeper. Uses a QUEUE (FIFO) to track nodes.",
     highlight: [],
     visited: [],
     queue: [],
@@ -1041,7 +1061,7 @@ const generateBFSSteps = (): AlgorithmStep[] => {
   });
 
   steps.push({
-    description: "Start BFS from node 0, add to queue",
+    description: "📍 Initialize: Start from node 0. Add it to the queue. Queue = [0]",
     highlight: [0],
     visited: [],
     queue: [0],
@@ -1050,7 +1070,7 @@ const generateBFSSteps = (): AlgorithmStep[] => {
   });
 
   steps.push({
-    description: "Visit node 0, add neighbors (1, 3) to queue",
+    description: "🔍 Dequeue 0, mark visited. Check neighbors: 1, 3. Both unvisited → add to queue.",
     highlight: [0],
     visited: [0],
     queue: [1, 3],
@@ -1059,7 +1079,7 @@ const generateBFSSteps = (): AlgorithmStep[] => {
   });
 
   steps.push({
-    description: "Dequeue node 1, add unvisited neighbors (2, 4) to queue",
+    description: "🔍 Dequeue 1 (front of queue), mark visited. Neighbors: 2, 4. Both unvisited → add to queue.",
     highlight: [1],
     visited: [0, 1],
     queue: [3, 2, 4],
@@ -1068,7 +1088,7 @@ const generateBFSSteps = (): AlgorithmStep[] => {
   });
 
   steps.push({
-    description: "Dequeue node 3, neighbor 4 already in queue",
+    description: "🔍 Dequeue 3, mark visited. Neighbor 4 is already in queue (will be visited soon).",
     highlight: [3],
     visited: [0, 1, 3],
     queue: [2, 4],
@@ -1077,7 +1097,7 @@ const generateBFSSteps = (): AlgorithmStep[] => {
   });
 
   steps.push({
-    description: "Dequeue node 2, no new neighbors",
+    description: "🔍 Dequeue 2, mark visited. No unvisited neighbors. Queue unchanged.",
     highlight: [2],
     visited: [0, 1, 3, 2],
     queue: [4],
@@ -1086,7 +1106,7 @@ const generateBFSSteps = (): AlgorithmStep[] => {
   });
 
   steps.push({
-    description: "Dequeue node 4, add unvisited neighbors (5, 6) to queue",
+    description: "🔍 Dequeue 4, mark visited. Neighbors: 5, 6. Both unvisited → add to queue.",
     highlight: [4],
     visited: [0, 1, 3, 2, 4],
     queue: [5, 6],
@@ -1095,7 +1115,7 @@ const generateBFSSteps = (): AlgorithmStep[] => {
   });
 
   steps.push({
-    description: "Dequeue node 5, no new neighbors",
+    description: "🔍 Dequeue 5, mark visited. No unvisited neighbors.",
     highlight: [5],
     visited: [0, 1, 3, 2, 4, 5],
     queue: [6],
@@ -1104,7 +1124,7 @@ const generateBFSSteps = (): AlgorithmStep[] => {
   });
 
   steps.push({
-    description: "Dequeue node 6, no new neighbors",
+    description: "🔍 Dequeue 6, mark visited. No unvisited neighbors. Queue is now empty!",
     highlight: [6],
     visited: [0, 1, 3, 2, 4, 5, 6],
     queue: [],
@@ -1113,7 +1133,7 @@ const generateBFSSteps = (): AlgorithmStep[] => {
   });
 
   steps.push({
-    description: "BFS complete! Order: 0 → 1 → 3 → 2 → 4 → 5 → 6",
+    description: "🎉 BFS Complete! Traversal order: 0 → 1 → 3 → 2 → 4 → 5 → 6. Notice: nodes at same depth are visited together.",
     highlight: [],
     visited: [0, 1, 3, 2, 4, 5, 6],
     queue: [],
@@ -1127,7 +1147,7 @@ const generateDFSSteps = (): AlgorithmStep[] => {
   const steps: AlgorithmStep[] = [];
   
   steps.push({
-    description: "Graph with 7 nodes - DFS explores as deep as possible using a stack",
+    description: "🎯 DFS (Depth-First Search): Explores as deep as possible before backtracking. Uses a STACK (LIFO) to track nodes.",
     highlight: [],
     visited: [],
     stack: [],
@@ -1135,7 +1155,7 @@ const generateDFSSteps = (): AlgorithmStep[] => {
   });
 
   steps.push({
-    description: "Start DFS from node 0, push to stack",
+    description: "📍 Initialize: Start from node 0. Push it to the stack. Stack = [0]",
     highlight: [0],
     visited: [],
     stack: [0],
@@ -1144,72 +1164,72 @@ const generateDFSSteps = (): AlgorithmStep[] => {
   });
 
   steps.push({
-    description: "Visit node 0, push unvisited neighbor 1 to stack",
+    description: "🔍 Pop 0, mark visited. Push unvisited neighbors (1, 3) to stack. Go deep first!",
     highlight: [0],
     visited: [0],
-    stack: [1],
+    stack: [3, 1],
     current: 0,
     codeLine: [4, 6, 7, 8, 9],
   });
 
   steps.push({
-    description: "Pop node 1, push unvisited neighbor 2 to stack",
+    description: "🔍 Pop 1 (top of stack), mark visited. Push neighbors (2, 4) to stack.",
     highlight: [1],
     visited: [0, 1],
-    stack: [2, 4],
+    stack: [3, 4, 2],
     current: 1,
     codeLine: [4, 6, 7, 8, 9],
   });
 
   steps.push({
-    description: "Pop node 2, no unvisited neighbors",
+    description: "🔍 Pop 2 (top), mark visited. No unvisited neighbors → backtrack!",
     highlight: [2],
     visited: [0, 1, 2],
-    stack: [4],
+    stack: [3, 4],
     current: 2,
     codeLine: [4, 5, 6],
   });
 
   steps.push({
-    description: "Backtrack, pop node 4, push unvisited neighbors",
+    description: "↩️ Backtrack! Pop 4, mark visited. Push unvisited neighbors (5, 6).",
     highlight: [4],
     visited: [0, 1, 2, 4],
-    stack: [5, 6, 3],
+    stack: [3, 6, 5],
     current: 4,
     codeLine: [7, 8, 9],
   });
 
   steps.push({
-    description: "Pop node 3, no new unvisited neighbors",
-    highlight: [3],
-    visited: [0, 1, 2, 4, 3],
-    stack: [5, 6],
-    current: 3,
-    codeLine: [4, 5, 6],
-  });
-
-  steps.push({
-    description: "Pop node 6, no unvisited neighbors",
-    highlight: [6],
-    visited: [0, 1, 2, 4, 3, 6],
-    stack: [5],
-    current: 6,
-    codeLine: [4, 5, 6],
-  });
-
-  steps.push({
-    description: "Pop node 5, no unvisited neighbors",
+    description: "🔍 Pop 5, mark visited. No unvisited neighbors.",
     highlight: [5],
-    visited: [0, 1, 2, 4, 3, 6, 5],
-    stack: [],
+    visited: [0, 1, 2, 4, 5],
+    stack: [3, 6],
     current: 5,
     codeLine: [4, 5, 6],
   });
 
   steps.push({
-    description: "DFS complete! Order: 0 → 1 → 2 → 4 → 3 → 6 → 5",
+    description: "🔍 Pop 6, mark visited. No unvisited neighbors.",
+    highlight: [6],
+    visited: [0, 1, 2, 4, 5, 6],
+    stack: [3],
+    current: 6,
+    codeLine: [4, 5, 6],
+  });
+
+  steps.push({
+    description: "🔍 Pop 3, mark visited. Neighbor 4 already visited. Stack empty!",
+    highlight: [3],
+    visited: [0, 1, 2, 4, 5, 6, 3],
+    stack: [],
+    current: 3,
+    codeLine: [4, 5, 6],
+  });
+
+  steps.push({
+    description: "🎉 DFS Complete! Traversal order: 0 → 1 → 2 → 4 → 5 → 6 → 3. Notice: went deep before exploring siblings.",
     highlight: [],
-    visited: [0, 1, 2, 4, 3, 6, 5],
+    visited: [0, 1, 2, 4, 5, 6, 3],
     stack: [],
     codeLine: [13],
   });
@@ -1443,7 +1463,7 @@ export const Visualizer = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [speed, setSpeed] = useState(1); // 0.5x to 3x
   const [selectedApproach, setSelectedApproach] = useState<string>("Default");
-  const [openSection, setOpenSection] = useState<string | null>(null);
+  const [openSection, setOpenSection] = useState<string | null>(DEFAULT_OPEN_SECTION);
   const [epoch, setEpoch] = useState(0); // bump to force re-generation of steps/inputs
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
