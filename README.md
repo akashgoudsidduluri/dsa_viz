@@ -4,70 +4,164 @@
 
 **URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
 
-## How can I edit this code?
+# dsa_viz — Interactive DSA Visualizer
 
-There are several ways of editing your application.
+An interactive **Data Structures & Algorithms visualizer** built for clarity, learning, and intuition.
 
-**Use Lovable**
+Visualize algorithms step-by-step with **synced pseudocode highlighting**, smooth animations, and full playback control — ideal for students, interview prep, and anyone who wants to deeply understand how algorithms work.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+Built with **React + Vite + TypeScript + Tailwind CSS + shadcn-ui**.
 
-Changes made via Lovable will be committed automatically to this repo.
+---
 
-**Use your preferred IDE**
+## 🚀 Live Demo
+(Coming soon — add your Vercel/Netlify URL here once deployed)
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+---
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## ✨ Features
 
-Follow these steps:
+### 🔢 Sorting Algorithms
+- Bubble Sort
+- Selection Sort
+- Insertion Sort
+- Merge Sort
+- Quick Sort
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+### 🔍 Searching Algorithms
+- Linear Search
+- Binary Search
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+### 🌳 Tree Algorithms
+- Binary Search Tree
+- Insert / Delete / Search
+- Traversals
 
-# Step 3: Install the necessary dependencies.
-npm i
+### 🌐 Graph Algorithms
+- BFS
+- DFS
+- Dijkstra's Algorithm
+- Topological Sort
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+### 🎯 Learning-Focused Design
+- Step-through execution
+- Active pseudocode highlighting
+- Adjustable animation speed
+- Pause / resume / reset
+- Clean, beginner-friendly visual interface
+
+---
+
+## 🧠 Why This Exists
+
+Most visualizers are flashy but distracting. This project keeps the focus on thinking like an engineer:
+- Every step is clear
+- Code and animation stay in sync
+- You control the flow
+- Ideal for DSA learning & interviews
+
+---
+
+## 🛠 Tech Stack
+
+- React
+- Vite
+- TypeScript
+- Tailwind CSS
+- shadcn-ui
+
+Fast • Modern • Maintainable
+
+---
+
+## 📦 Getting Started
+
+### 1️⃣ Clone the repository
+```bash
+git clone https://github.com/akashgoudsidduluri/dsa_viz
+cd dsa_viz
+```
+
+### 2️⃣ Install dependencies
+Using npm:
+```bash
+npm install
+```
+Or using pnpm:
+```bash
+pnpm install
+```
+
+### 3️⃣ Run the dev server
+```bash
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+Open the URL printed by Vite (usually http://localhost:5173).
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### 4️⃣ Build for production
+```bash
+npm run build
+npm run preview
+```
 
-**Use GitHub Codespaces**
+---
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## 🗂 Project Structure (high level)
 
-## What technologies are used for this project?
+- [src](src) — Application source
+	- [src/main.tsx](src/main.tsx) — App entry
+	- [src/App.tsx](src/App.tsx) — Top-level app component
+	- [src/components](src/components) — UI components & sections
+	- [src/lib](src/lib) — Algorithms logic & helpers
+	- [src/data/dsaContent.ts](src/data/dsaContent.ts) — DSA content & metadata
+	- [src/visualizations](src/visualizations) — Visual components (arrays, trees, graphs)
 
-This project is built with:
+Explore the `src` folder to find algorithm implementations and their visualizers.
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+---
 
-## How can I deploy this project?
+## 🧩 How to Use
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+- Select an algorithm from the UI.
+- Use controls to play, pause, step forward/back, or reset.
+- Adjust animation speed for faster/slower visualization.
+- Follow the highlighted pseudocode to correlate visual steps with algorithm logic.
 
-## Can I connect a custom domain to my Lovable project?
+---
 
-Yes, you can!
+## 🤝 Contributing
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+Contributions are welcome! Suggested workflow:
+- Fork the repo
+- Create a feature branch (feature/awesome-visual)
+- Make changes and add tests if applicable
+- Open a PR with a clear description
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+Please follow existing code style and file structure. If adding a new algorithm visualizer, include:
+- Clear step generator in `src/lib` or equivalent
+- Visual component under `src/visualizations`
+- A UI entry in the relevant `sections` page
+
+---
+
+## 📣 Deployment
+
+Deploy with Vercel, Netlify, or any static host that supports Vite builds. After deployment, paste the demo URL in the Live Demo section above.
+
+---
+
+## 📜 License
+
+This project is available under the MIT License. Add a `LICENSE` file to the repo if not present.
+
+---
+
+## 🙏 Acknowledgements
+
+- Inspired by many DSA visualizers and educational tooling.
+- Built with shadcn-ui and Tailwind CSS for a compact, accessible UI.
+
+---
+
+If you'd like, I can also add badges, a demo GIF, or commit this change for you.
