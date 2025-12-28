@@ -31,12 +31,16 @@ export const Footer = () => {
               </a>
               <a
                 href="https://github.com/akashgoudsidduluri"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center hover:bg-primary/20 hover:text-primary transition-colors"
               >
                 <Github className="w-5 h-5" />
               </a>
               <a
                 href="https://www.linkedin.com/in/akash-goud-sidduluri-68aba5322"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center hover:bg-primary/20 hover:text-primary transition-colors"
               >
                 <Linkedin className="w-5 h-5" />
@@ -75,3 +79,4 @@ export const Footer = () => {
     </footer>
   );
 };
+
