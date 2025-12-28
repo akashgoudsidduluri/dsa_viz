@@ -29,22 +29,22 @@ export const Footer = () => {
               >
                 <Twitter className="w-5 h-5" />
               </a>
-              <a
-                href="https://github.com/akashgoudsidduluri"
-                target="_blank"
-                rel="noopener noreferrer"
+
+              <button
+                onClick={() => window.open("https://github.com/akashgoudsidduluri", "_blank")}
                 className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center hover:bg-primary/20 hover:text-primary transition-colors"
               >
                 <Github className="w-5 h-5" />
-              </a>
-              <a
-                href="https://www.linkedin.com/in/akash-goud-sidduluri-68aba5322"
-                target="_blank"
-                rel="noopener noreferrer"
+              </button>
+
+              <button
+                onClick={() =>
+                  window.open("https://www.linkedin.com/in/akash-goud-sidduluri-68aba5322", "_blank")
+                }
                 className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center hover:bg-primary/20 hover:text-primary transition-colors"
               >
                 <Linkedin className="w-5 h-5" />
-              </a>
+              </button>
             </div>
           </div>
 
@@ -79,4 +79,3 @@ export const Footer = () => {
     </footer>
   );
 };
-
