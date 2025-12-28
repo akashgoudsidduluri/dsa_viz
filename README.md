@@ -1,9 +1,3 @@
-# Welcome to your Lovable project
-
-## Project info
-
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
-
 # dsa_viz — Interactive DSA Visualizer
 
 An interactive **Data Structures & Algorithms visualizer** built for clarity, learning, and intuition.
