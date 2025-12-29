@@ -14,7 +14,242 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      activity_feed: {
+        Row: {
+          activity_type: string
+          created_at: string
+          description: string | null
+          id: string
+          metadata: Json | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          activity_type: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          activity_type?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      badges: {
+        Row: {
+          created_at: string
+          description: string
+          icon: string
+          id: string
+          key: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          icon: string
+          id?: string
+          key: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          icon?: string
+          id?: string
+          key?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      problem_solve_history: {
+        Row: {
+          difficulty: string
+          id: string
+          problem_id: string
+          problem_title: string
+          solved_at: string
+          topic: string
+          user_id: string
+        }
+        Insert: {
+          difficulty: string
+          id?: string
+          problem_id: string
+          problem_title: string
+          solved_at?: string
+          topic: string
+          user_id: string
+        }
+        Update: {
+          difficulty?: string
+          id?: string
+          problem_id?: string
+          problem_title?: string
+          solved_at?: string
+          topic?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          additional_info: string | null
+          avatar_key: string | null
+          bio: string | null
+          created_at: string
+          date_of_birth: string | null
+          email: string
+          id: string
+          phone: string | null
+          updated_at: string
+          user_id: string
+          username: string
+        }
+        Insert: {
+          additional_info?: string | null
+          avatar_key?: string | null
+          bio?: string | null
+          created_at?: string
+          date_of_birth?: string | null
+          email: string
+          id?: string
+          phone?: string | null
+          updated_at?: string
+          user_id: string
+          username: string
+        }
+        Update: {
+          additional_info?: string | null
+          avatar_key?: string | null
+          bio?: string | null
+          created_at?: string
+          date_of_birth?: string | null
+          email?: string
+          id?: string
+          phone?: string | null
+          updated_at?: string
+          user_id?: string
+          username?: string
+        }
+        Relationships: []
+      }
+      quiz_history: {
+        Row: {
+          completed_at: string
+          id: string
+          quiz_topic: string
+          score: number
+          time_taken_seconds: number | null
+          total_questions: number
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string
+          id?: string
+          quiz_topic: string
+          score: number
+          time_taken_seconds?: number | null
+          total_questions: number
+          user_id: string
+        }
+        Update: {
+          completed_at?: string
+          id?: string
+          quiz_topic?: string
+          score?: number
+          time_taken_seconds?: number | null
+          total_questions?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_badges: {
+        Row: {
+          badge_id: string
+          earned_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          badge_id: string
+          earned_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          badge_id?: string
+          earned_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_badges_badge_id_fkey"
+            columns: ["badge_id"]
+            isOneToOne: false
+            referencedRelation: "badges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_scores: {
+        Row: {
+          current_streak: number
+          easy_solved: number
+          hard_solved: number
+          id: string
+          last_activity_date: string | null
+          longest_streak: number
+          medium_solved: number
+          problems_solved: number
+          quiz_total_score: number
+          quizzes_completed: number
+          total_points: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          current_streak?: number
+          easy_solved?: number
+          hard_solved?: number
+          id?: string
+          last_activity_date?: string | null
+          longest_streak?: number
+          medium_solved?: number
+          problems_solved?: number
+          quiz_total_score?: number
+          quizzes_completed?: number
+          total_points?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          current_streak?: number
+          easy_solved?: number
+          hard_solved?: number
+          id?: string
+          last_activity_date?: string | null
+          longest_streak?: number
+          medium_solved?: number
+          problems_solved?: number
+          quiz_total_score?: number
+          quizzes_completed?: number
+          total_points?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
