@@ -1,8 +1,11 @@
 import { motion } from "framer-motion";
-import { Code2, Menu, X } from "lucide-react";
+import { Code2, Menu, X, User, LogOut } from "lucide-react";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import ThemeToggle from "@/components/ui/theme-toggle";
+import { useAuth } from "@/contexts/AuthContext";
+import { getAvatarEmoji } from "@/data/avatars";
 
 const navItems = [
   { label: "Topics", href: "#topics" },
@@ -13,6 +16,8 @@ const navItems = [
 
 export const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const { user, profile, signOut } = useAuth();
+  const navigate = useNavigate();
 
   return (
     <motion.nav
@@ -48,12 +53,31 @@ export const Navbar = () => {
 
           <div className="hidden md:flex items-center gap-3">
             <ThemeToggle />
-            <Button variant="ghost" size="sm">
-              Sign In
-            </Button>
-            <Button variant="hero" size="sm">
-              Get Started
-            </Button>
+            {user ? (
+              <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate('/profile')}
+                  className="flex items-center gap-2"
+                >
+                  <span className="text-lg">{getAvatarEmoji(profile?.avatar_key || 'superhero-1')}</span>
+                  <span>{profile?.username || 'Profile'}</span>
+                </Button>
+                <Button variant="outline" size="sm" onClick={signOut}>
+                  <LogOut className="w-4 h-4" />
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button variant="ghost" size="sm" onClick={() => navigate('/auth')}>
+                  Sign In
+                </Button>
+                <Button variant="hero" size="sm" onClick={() => navigate('/auth')}>
+                  Get Started
+                </Button>
+              </>
+            )}
           </div>
 
           <button
@@ -82,12 +106,25 @@ export const Navbar = () => {
             ))}
             <div className="flex gap-3 mt-4 items-center">
               <ThemeToggle />
-              <Button variant="ghost" size="sm" className="flex-1">
-                Sign In
-              </Button>
-              <Button variant="hero" size="sm" className="flex-1">
-                Get Started
-              </Button>
+              {user ? (
+                <>
+                  <Button variant="ghost" size="sm" className="flex-1" onClick={() => { navigate('/profile'); setIsOpen(false); }}>
+                    Profile
+                  </Button>
+                  <Button variant="outline" size="sm" className="flex-1" onClick={() => { signOut(); setIsOpen(false); }}>
+                    Sign Out
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button variant="ghost" size="sm" className="flex-1" onClick={() => { navigate('/auth'); setIsOpen(false); }}>
+                    Sign In
+                  </Button>
+                  <Button variant="hero" size="sm" className="flex-1" onClick={() => { navigate('/auth'); setIsOpen(false); }}>
+                    Get Started
+                  </Button>
+                </>
+              )}
             </div>
           </motion.div>
         )}
