@@ -201,32 +201,19 @@ export const useUserStats = () => {
   const fetchRanking = async () => {
     if (!user) return;
 
-    // Get total users count
-    const { count: totalUsers } = await supabase
-      .from('user_scores')
-      .select('*', { count: 'exact', head: true });
+    // Use secure RPC function to get ranking without exposing all user data
+    const { data, error } = await supabase
+      .rpc('get_user_ranking', { p_user_id: user.id });
 
-    // Get user's rank by points
-    const { data: userScore } = await supabase
-      .from('user_scores')
-      .select('total_points')
-      .eq('user_id', user.id)
-      .single();
-
-    if (userScore && totalUsers) {
-      const { count: usersAbove } = await supabase
-        .from('user_scores')
-        .select('*', { count: 'exact', head: true })
-        .gt('total_points', userScore.total_points);
-
-      const rank = (usersAbove || 0) + 1;
-      const percentile = Math.round((1 - rank / totalUsers) * 100);
-
-      setRanking({
-        global_rank: rank,
-        total_users: totalUsers,
-        percentile: Math.max(0, percentile),
-      });
+    if (data && data.length > 0 && !error) {
+      const rankingData = data[0];
+      if (rankingData.global_rank !== null) {
+        setRanking({
+          global_rank: Number(rankingData.global_rank),
+          total_users: Number(rankingData.total_users),
+          percentile: rankingData.percentile,
+        });
+      }
     }
   };
 
