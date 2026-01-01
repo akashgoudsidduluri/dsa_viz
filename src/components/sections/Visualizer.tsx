@@ -1551,42 +1551,109 @@ export const Visualizer = () => {
               )}
 
               {visualType === "array" && (
-                <div className="flex justify-center gap-2 flex-wrap">
-                  {(currentStep.array || (currentInput.type === "array" ? (currentInput.data as number[]) : [64, 34, 25, 12, 22, 11, 90])).map((val, i) => {
-                    const isHighlighted = currentStep.highlight.includes(i);
-                    const isSorted = currentStep.sorted?.includes(i);
-                    const isPivot = currentStep.pivot === i;
-                    const isFound = currentStep.found && currentStep.mid === i;
-                    const isInRange = currentStep.left !== undefined && 
-                      currentStep.right !== undefined && 
-                      i >= currentStep.left && 
-                      i <= currentStep.right;
-                    
-                    return (
-                      <motion.div
-                        key={i}
-                        className={`w-10 h-10 flex items-center justify-center rounded-lg font-mono font-bold text-sm border-2 transition-all ${
-                          isFound
-                            ? "bg-green-500 border-green-400 text-white"
-                            : isPivot
-                            ? "bg-accent border-accent text-accent-foreground"
-                            : isSorted
-                            ? "bg-green-500/20 border-green-500 text-green-400"
-                            : isHighlighted
-                            ? "bg-primary border-primary text-primary-foreground glow-primary"
-                            : isInRange
-                            ? "bg-primary/20 border-primary/50 text-foreground"
-                            : "bg-secondary/50 border-border text-muted-foreground"
-                        }`}
-                        animate={{
-                          scale: isHighlighted || isPivot || isFound ? 1.1 : 1,
-                          y: isHighlighted ? -5 : 0,
-                        }}
-                      >
-                        {val}
-                      </motion.div>
-                    );
-                  })}
+                <div className="w-full">
+                  {/* Bar Chart Visualization */}
+                  <div className="flex items-end justify-center gap-1 md:gap-2 h-48 mb-4 px-4">
+                    {(currentStep.array || (currentInput.type === "array" ? (currentInput.data as number[]) : [64, 34, 25, 12, 22, 11, 90])).map((val, i) => {
+                      const isHighlighted = currentStep.highlight.includes(i);
+                      const isSorted = currentStep.sorted?.includes(i);
+                      const isPivot = currentStep.pivot === i;
+                      const isFound = currentStep.found && currentStep.mid === i;
+                      const isInRange = currentStep.left !== undefined && 
+                        currentStep.right !== undefined && 
+                        i >= currentStep.left && 
+                        i <= currentStep.right;
+                      
+                      const maxVal = Math.max(...(currentStep.array || [90]));
+                      const heightPercent = (val / maxVal) * 100;
+                      
+                      return (
+                        <motion.div
+                          key={i}
+                          className="relative flex flex-col items-center"
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: i * 0.05 }}
+                        >
+                          {/* Bar */}
+                          <motion.div
+                            className={`w-8 md:w-12 rounded-t-lg relative overflow-hidden transition-all duration-300 ${
+                              isFound
+                                ? "bg-gradient-to-t from-green-600 to-green-400"
+                                : isPivot
+                                ? "bg-gradient-to-t from-accent to-accent/70"
+                                : isSorted
+                                ? "bg-gradient-to-t from-green-600/80 to-green-400/80"
+                                : isHighlighted
+                                ? "bg-gradient-to-t from-primary to-primary/70"
+                                : isInRange
+                                ? "bg-gradient-to-t from-primary/40 to-primary/20"
+                                : "bg-gradient-to-t from-secondary to-secondary/50"
+                            }`}
+                            style={{ height: `${Math.max(heightPercent * 1.6, 20)}px` }}
+                            animate={{
+                              scale: isHighlighted || isPivot || isFound ? 1.05 : 1,
+                              y: isHighlighted ? -8 : 0,
+                            }}
+                            transition={{ type: "spring", stiffness: 300 }}
+                          >
+                            {/* Shine effect */}
+                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+                            
+                            {/* Glow for highlighted */}
+                            {(isHighlighted || isPivot || isFound) && (
+                              <motion.div
+                                className={`absolute inset-0 ${
+                                  isFound ? "bg-green-400/30" : isPivot ? "bg-accent/30" : "bg-primary/30"
+                                }`}
+                                animate={{ opacity: [0.3, 0.6, 0.3] }}
+                                transition={{ repeat: Infinity, duration: 1 }}
+                              />
+                            )}
+                          </motion.div>
+                          
+                          {/* Value label */}
+                          <motion.span 
+                            className={`mt-2 text-xs md:text-sm font-mono font-semibold ${
+                              isHighlighted || isPivot || isFound 
+                                ? "text-primary" 
+                                : isSorted 
+                                ? "text-green-400" 
+                                : "text-muted-foreground"
+                            }`}
+                            animate={{ scale: isHighlighted ? 1.1 : 1 }}
+                          >
+                            {val}
+                          </motion.span>
+                          
+                          {/* Index indicator */}
+                          <span className="text-[10px] text-muted-foreground/50 mt-1">
+                            [{i}]
+                          </span>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                  
+                  {/* Legend */}
+                  <div className="flex justify-center gap-4 md:gap-6 flex-wrap mt-4 px-4">
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 rounded bg-gradient-to-t from-primary to-primary/70" />
+                      <span className="text-xs text-muted-foreground">Comparing</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 rounded bg-gradient-to-t from-green-600/80 to-green-400/80" />
+                      <span className="text-xs text-muted-foreground">Sorted</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 rounded bg-gradient-to-t from-accent to-accent/70" />
+                      <span className="text-xs text-muted-foreground">Pivot</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 rounded bg-gradient-to-t from-secondary to-secondary/50" />
+                      <span className="text-xs text-muted-foreground">Unsorted</span>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>

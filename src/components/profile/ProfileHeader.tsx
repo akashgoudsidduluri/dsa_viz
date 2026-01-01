@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { Calendar, Edit2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { getAvatarEmoji } from '@/data/avatars';
+import { AvatarDisplay } from './AvatarDisplay';
 
 interface Profile {
   username: string;
@@ -31,9 +31,7 @@ export const ProfileHeader = ({ profile, onEdit }: ProfileHeaderProps) => {
     >
       {/* Avatar */}
       <div className="flex items-start justify-between">
-        <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 border-2 border-primary/30 flex items-center justify-center text-5xl">
-          {getAvatarEmoji(profile.avatar_key)}
-        </div>
+        <AvatarDisplay avatarKey={profile.avatar_key} size="lg" />
         <Button variant="ghost" size="icon" onClick={onEdit}>
           <Edit2 className="w-4 h-4" />
         </Button>
