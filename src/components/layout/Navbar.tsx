@@ -1,11 +1,11 @@
 import { motion } from "framer-motion";
-import { Code2, Menu, X, User, LogOut } from "lucide-react";
+import { Code2, Menu, X, LogOut } from "lucide-react";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import ThemeToggle from "@/components/ui/theme-toggle";
 import { useAuth } from "@/contexts/AuthContext";
-import { getAvatarEmoji } from "@/data/avatars";
+import { AvatarDisplay } from "@/components/profile/AvatarDisplay";
 
 const navItems = [
   { label: "Topics", href: "#topics" },
@@ -18,6 +18,26 @@ export const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const { user, profile, signOut } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const handleNavClick = (href: string) => {
+    if (location.pathname !== '/') {
+      // Navigate to home first, then scroll to section
+      navigate('/');
+      setTimeout(() => {
+        const element = document.querySelector(href);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 100);
+    } else {
+      // Already on home, just scroll
+      const element = document.querySelector(href);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+  };
 
   return (
     <motion.nav
@@ -40,14 +60,17 @@ export const Navbar = () => {
 
           <div className="hidden md:flex items-center gap-8">
             {navItems.map((item) => (
-              <motion.a
+              <motion.button
                 key={item.label}
-                href={item.href}
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleNavClick(item.href);
+                }}
                 className="text-muted-foreground hover:text-foreground transition-colors font-medium"
                 whileHover={{ y: -2 }}
               >
                 {item.label}
-              </motion.a>
+              </motion.button>
             ))}
           </div>
 
@@ -59,9 +82,9 @@ export const Navbar = () => {
                   variant="ghost"
                   size="sm"
                   onClick={() => navigate('/profile')}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 h-auto py-1"
                 >
-                  <span className="text-lg">{getAvatarEmoji(profile?.avatar_key || 'superhero-1')}</span>
+                  <AvatarDisplay avatarKey={profile?.avatar_key || 'hero-shield'} size="sm" showBorder={false} />
                   <span>{profile?.username || 'Profile'}</span>
                 </Button>
                 <Button variant="outline" size="sm" onClick={signOut}>
@@ -95,14 +118,16 @@ export const Navbar = () => {
             className="md:hidden py-4 border-t border-border/50"
           >
             {navItems.map((item) => (
-              <a
+              <button
                 key={item.label}
-                href={item.href}
-                className="block py-3 text-muted-foreground hover:text-foreground"
-                onClick={() => setIsOpen(false)}
+                onClick={() => {
+                  handleNavClick(item.href);
+                  setIsOpen(false);
+                }}
+                className="block w-full text-left py-3 text-muted-foreground hover:text-foreground"
               >
                 {item.label}
-              </a>
+              </button>
             ))}
             <div className="flex gap-3 mt-4 items-center">
               <ThemeToggle />

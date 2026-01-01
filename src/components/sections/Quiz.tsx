@@ -1,8 +1,10 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, Clock, Trophy, XCircle, ArrowLeft, RotateCcw, BookOpen } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { useProgressTracking } from "@/hooks/useProgressTracking";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Question {
   q: string;
@@ -359,8 +361,15 @@ interface QuizState {
 export const Quiz = () => {
   const [activeQuiz, setActiveQuiz] = useState<QuizState | null>(null);
   const [quizScores, setQuizScores] = useState<Record<number, number>>({});
+  const [quizStartTime, setQuizStartTime] = useState<number | null>(null);
+  const { recordQuizCompleted } = useProgressTracking();
+  const { user } = useAuth();
+
+  // Load saved scores from database on mount - but we'll rely on the profile page to show stored history
+  // For local session, we still track scores in state for immediate feedback
 
   const startQuiz = (index: number) => {
+    setQuizStartTime(Date.now());
     setActiveQuiz({
       quizIndex: index,
       currentQuestion: 0,
@@ -383,7 +392,7 @@ export const Quiz = () => {
     });
   };
 
-  const nextQuestion = () => {
+  const nextQuestion = async () => {
     if (!activeQuiz) return;
     
     const quiz = quizzesData[activeQuiz.quizIndex];
@@ -399,6 +408,17 @@ export const Quiz = () => {
       const score = Math.round((correctCount / quiz.questions.length) * 100);
       setQuizScores({ ...quizScores, [activeQuiz.quizIndex]: score });
       setActiveQuiz({ ...activeQuiz, completed: true });
+
+      // Save to database if user is logged in
+      if (user) {
+        const timeTaken = quizStartTime ? Math.round((Date.now() - quizStartTime) / 1000) : undefined;
+        await recordQuizCompleted({
+          quiz_topic: quiz.topic,
+          score: correctCount,
+          total_questions: quiz.questions.length,
+          time_taken_seconds: timeTaken,
+        });
+      }
     } else {
       setActiveQuiz({
         ...activeQuiz,

@@ -3,40 +3,14 @@ import { useState, useMemo, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronRight, Code, Pause, Play, RotateCcw, SkipForward } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
-import ThemeToggle from "@/components/ui/theme-toggle";
-import * as Algo from "@/lib/algorithms";
 
-// Grouped sections for UI: label -> [algorithms]
-// Default open section for better UX
-const DEFAULT_OPEN_SECTION = "Sorting";
-
+// Algorithm sections
 const algorithmSections: Record<string, string[]> = {
-  "Sorting": [
-    "Bubble Sort",
-    "Selection Sort",
-    "Insertion Sort",
-    "Merge Sort",
-    "Quick Sort",
-  ],
-  "Searching": [
-    "Linear Search",
-    "Binary Search",
-  ],
-  "Graphs": [
-    "BFS",
-    "DFS",
-    "Dijkstra",
-    "Topological Sort",
-  ],
-  "Linked List": [
-    "Reverse Linked List",
-    "Cycle Detection",
-    "Find Middle",
-  ],
-  "Tree": [
-    "In-Order DFS",
-    "Level Order BFS",
-  ],
+  "Sorting": ["Bubble Sort", "Selection Sort", "Insertion Sort", "Merge Sort", "Quick Sort"],
+  "Searching": ["Linear Search", "Binary Search"],
+  "Graphs": ["BFS", "DFS"],
+  "Linked List": ["Reverse Linked List", "Cycle Detection", "Find Middle"],
+  "Tree": ["Pre-Order", "In-Order", "Post-Order", "Level Order"],
 };
 
 type AlgorithmStep = {
@@ -54,523 +28,214 @@ type AlgorithmStep = {
   stack?: number[];
   current?: number;
   codeLine?: number[];
+  pointers?: { slow?: number; fast?: number; prev?: number; curr?: number };
 };
 
-// Algorithm code snippets organized by algorithm -> approach
-const algorithmCode: Record<string, Record<string, string[]>> = {
-  "Bubble Sort": {
-    Default: [
-      "function bubbleSort(arr) {",
-      "  for (let i = 0; i < n-1; i++) {",
-      "    for (let j = 0; j < n-i-1; j++) {",
-      "      if (arr[j] > arr[j+1]) {",
-      "        swap(arr[j], arr[j+1]);",
-      "      }",
-      "    }",
-      "  }",
-      "  return arr;",
-      "}",
-    ],
-  },
-  "Quick Sort": {
-    Default: [
-      "function quickSort(arr, low, high) {",
-      "  if (low < high) {",
-      "    pivot = arr[high];",
-      "    i = low - 1;",
-      "    for (j = low; j < high; j++) {",
-      "      if (arr[j] < pivot) {",
-      "        i++; swap(arr[i], arr[j]);",
-      "      }",
-      "    }",
-      "    swap(arr[i+1], arr[high]);",
-      "    pi = i + 1;",
-      "    quickSort(arr, low, pi-1);",
-      "    quickSort(arr, pi+1, high);",
-      "  }",
-      "}",
-    ],
-  },
-  "Merge Sort": {
-    Default: [
-      "function mergeSort(arr) {",
-      "  if (arr.length <= 1) return arr;",
-      "  mid = arr.length / 2;",
-      "  left = mergeSort(arr[0..mid]);",
-      "  right = mergeSort(arr[mid..n]);",
-      "  return merge(left, right);",
-      "}",
-      "",
-      "function merge(left, right) {",
-      "  result = [];",
-      "  while (left && right) {",
-      "    if (left[0] <= right[0])",
-      "      result.push(left.shift());",
-      "    else",
-      "      result.push(right.shift());",
-      "  }",
-      "  return [...result, ...left, ...right];",
-      "}",
-    ],
-  },
-  "Binary Search": {
-    Default: [
-      "function binarySearch(arr, target) {",
-      "  left = 0, right = arr.length - 1;",
-      "  while (left <= right) {",
-      "    mid = Math.floor((left+right)/2);",
-      "    if (arr[mid] === target) {",
-      "      return mid; // Found!",
-      "    }",
-      "    if (arr[mid] < target) {",
-      "      left = mid + 1;",
-      "    } else {",
-      "      right = mid - 1;",
-      "    }",
-      "  }",
-      "  return -1; // Not found",
-      "}",
-    ],
-  },
-  "BFS": {
-    Default: [
-      "function BFS(graph, start) {",
-      "  visited = new Set();",
-      "  queue = [start];",
-      "  while (queue.length > 0) {",
-      "    node = queue.shift();",
-      "    if (visited.has(node)) continue;",
-      "    visited.add(node);",
-      "    for (neighbor of graph[node]) {",
-      "      if (!visited.has(neighbor)) {",
-      "        queue.push(neighbor);",
-      "      }",
-      "    }",
-      "  }",
-      "  return visited;",
-      "}",
-    ],
-  },
-  "DFS": {
-    Default: [
-      "function DFS(graph, start) {",
-      "  visited = new Set();",
-      "  stack = [start];",
-      "  while (stack.length > 0) {",
-      "    node = stack.pop();",
-      "    if (visited.has(node)) continue;",
-      "    visited.add(node);",
-      "    for (neighbor of graph[node]) {",
-      "      if (!visited.has(neighbor)) {",
-      "        stack.push(neighbor);",
-      "      }",
-      "    }",
-      "  }",
-      "  return visited;",
-      "}",
-    ],
-  },
-  "Selection Sort": {
-    Default: [
-      "function selectionSort(arr) {",
-      "  for i from 0 to n-1 {",
-      "    minIdx = i",
-      "    for j from i+1 to n-1 {",
-      "      if arr[j] < arr[minIdx] then minIdx = j",
-      "    }",
-      "    swap(arr[i], arr[minIdx])",
-      "  }",
-      "  return arr",
-      "}",
-    ],
-  },
-  "Insertion Sort": {
-    Default: [
-      "function insertionSort(arr) {",
-      "  for i from 1 to n-1 {",
-      "    key = arr[i]",
-      "    j = i-1",
-      "    while j >= 0 and arr[j] > key {",
-      "      arr[j+1] = arr[j]  // shift",
-      "      j = j - 1",
-      "    }",
-      "    arr[j+1] = key  // insert",
-      "  }",
-      "}",
-    ],
-  },
-  "Linear Search": {
-    Default: [
-      "function linearSearch(arr, target) {",
-      "  for i from 0 to n-1 {",
-      "    if arr[i] == target then return i  // found",
-      "  }",
-      "  return -1",
-      "}",
-    ],
-  
-  },
-  "Reverse Linked List": {
-    Default: [
-      "function reverseList(head) {",
-      "  prev = null",
-      "  curr = head",
-      "  while curr != null {",
-      "    next = curr.next",
-      "    curr.next = prev",
-      "    prev = curr",
-      "    curr = next",
-      "  }",
-      "  return prev",
-      "}",
-    ],
-  },
-  "Cycle Detection": {
-    Default: [
-      "function hasCycle(head) {",
-      "  slow = head, fast = head",
-      "  while fast and fast.next {",
-      "    slow = slow.next",
-      "    fast = fast.next.next",
-      "    if slow == fast return true",
-      "  }",
-      "  return false",
-      "}",
-    ],
-  },
-  "Find Middle": {
-    Default: [
-      "function findMiddle(head) {",
-      "  slow = head; fast = head;",
-      "  while fast != null && fast.next != null {",
-      "    slow = slow.next  // move slow by 1",
-      "    fast = fast.next.next  // move fast by 2",
-      "  }",
-      "  return slow",
-      "}",
-    ],
-  },
-  "In-Order DFS": {
-    Default: [
-      "function inorder(root) {",
-      "  dfs(node) {",
-      "    if node == null return",
-      "    dfs(node.left)",
-      "    visit(node)",
-      "    dfs(node.right)",
-      "  }",
-      "}",
-    ],
-  },
-  "Level Order BFS": {
-    Default: [
-      "function levelOrder(root) {",
-      "  if not root return []",
-      "  queue = [root]",
-      "  while queue not empty {",
-      "    node = queue.shift()",
-      "    visit(node)",
-      "    push children to queue",
-      "  }",
-      "}",
-    ],
-  },
-  "Dijkstra": {
-    Default: [
-      "function dijkstra(graph, src) {",
-      "  dist = [inf..], dist[src] = 0",
-      "  while there are unvisited nodes {",
-      "    u = node with smallest dist",
-      "    visit(u)",
-      "    for edge u->v weight w {",
-      "      if dist[u] + w < dist[v] then dist[v] = dist[u] + w  // relax",
-      "    }",
-      "  }",
-      "  return dist",
-      "}",
-    ],
-  },
-  "Topological Sort": {
-    Default: [
-      "function kahn(adj) {",
-      "  indeg = compute indegrees",
-      "  q = nodes with indeg 0",
-      "  while q not empty {",
-      "    u = q.shift(); visit(u)",
-      "    for v of adj[u] { indeg[v]--; if indeg[v]==0 q.push(v) }",
-      "  }",
-      "}",
-    ],
-  },
-
+// Algorithm code snippets
+const algorithmCode: Record<string, string[]> = {
+  "Bubble Sort": [
+    "function bubbleSort(arr) {",
+    "  for (let i = 0; i < n-1; i++) {",
+    "    for (let j = 0; j < n-i-1; j++) {",
+    "      if (arr[j] > arr[j+1]) {",
+    "        swap(arr[j], arr[j+1]);",
+    "      }",
+    "    }",
+    "  }",
+    "  return arr;",
+    "}",
+  ],
+  "Selection Sort": [
+    "function selectionSort(arr) {",
+    "  for i from 0 to n-1 {",
+    "    minIdx = i",
+    "    for j from i+1 to n-1 {",
+    "      if arr[j] < arr[minIdx] then minIdx = j",
+    "    }",
+    "    swap(arr[i], arr[minIdx])",
+    "  }",
+    "  return arr",
+    "}",
+  ],
+  "Insertion Sort": [
+    "function insertionSort(arr) {",
+    "  for i from 1 to n-1 {",
+    "    key = arr[i]",
+    "    j = i - 1",
+    "    while j >= 0 and arr[j] > key {",
+    "      arr[j+1] = arr[j]  // shift right",
+    "      j = j - 1",
+    "    }",
+    "    arr[j+1] = key  // insert key",
+    "  }",
+    "}",
+  ],
+  "Merge Sort": [
+    "function mergeSort(arr, l, r) {",
+    "  if (l >= r) return;",
+    "  mid = (l + r) / 2;",
+    "  mergeSort(arr, l, mid);",
+    "  mergeSort(arr, mid+1, r);",
+    "  merge(arr, l, mid, r);",
+    "}",
+    "",
+    "function merge(arr, l, m, r) {",
+    "  // Compare elements from left and right",
+    "  // Place smaller element first",
+    "  // Copy remaining elements",
+    "}",
+  ],
+  "Quick Sort": [
+    "function quickSort(arr, low, high) {",
+    "  if (low < high) {",
+    "    pivot = arr[high];",
+    "    i = low - 1;",
+    "    for (j = low; j < high; j++) {",
+    "      if (arr[j] < pivot) {",
+    "        i++; swap(arr[i], arr[j]);",
+    "      }",
+    "    }",
+    "    swap(arr[i+1], arr[high]);",
+    "    pi = i + 1;",
+    "    quickSort(arr, low, pi-1);",
+    "    quickSort(arr, pi+1, high);",
+    "  }",
+    "}",
+  ],
+  "Linear Search": [
+    "function linearSearch(arr, target) {",
+    "  for i from 0 to n-1 {",
+    "    if arr[i] == target",
+    "      return i  // found!",
+    "  }",
+    "  return -1  // not found",
+    "}",
+  ],
+  "Binary Search": [
+    "function binarySearch(arr, target) {",
+    "  left = 0, right = n - 1;",
+    "  while (left <= right) {",
+    "    mid = (left + right) / 2;",
+    "    if (arr[mid] == target)",
+    "      return mid;  // Found!",
+    "    else if (arr[mid] < target)",
+    "      left = mid + 1;",
+    "    else",
+    "      right = mid - 1;",
+    "  }",
+    "  return -1;",
+    "}",
+  ],
+  "BFS": [
+    "function BFS(graph, start) {",
+    "  visited = new Set();",
+    "  queue = [start];",
+    "  while (queue.length > 0) {",
+    "    node = queue.shift();",
+    "    if (visited.has(node)) continue;",
+    "    visited.add(node);",
+    "    for (neighbor of graph[node]) {",
+    "      if (!visited.has(neighbor))",
+    "        queue.push(neighbor);",
+    "    }",
+    "  }",
+    "}",
+  ],
+  "DFS": [
+    "function DFS(graph, start) {",
+    "  visited = new Set();",
+    "  stack = [start];",
+    "  while (stack.length > 0) {",
+    "    node = stack.pop();",
+    "    if (visited.has(node)) continue;",
+    "    visited.add(node);",
+    "    for (neighbor of graph[node]) {",
+    "      if (!visited.has(neighbor))",
+    "        stack.push(neighbor);",
+    "    }",
+    "  }",
+    "}",
+  ],
+  "Reverse Linked List": [
+    "function reverseList(head) {",
+    "  prev = null, curr = head;",
+    "  while (curr != null) {",
+    "    next = curr.next;",
+    "    curr.next = prev;  // reverse pointer",
+    "    prev = curr;",
+    "    curr = next;",
+    "  }",
+    "  return prev;",
+    "}",
+  ],
+  "Cycle Detection": [
+    "function hasCycle(head) {",
+    "  slow = fast = head;",
+    "  while (fast && fast.next) {",
+    "    slow = slow.next;",
+    "    fast = fast.next.next;",
+    "    if (slow == fast)",
+    "      return true;  // Cycle found!",
+    "  }",
+    "  return false;",
+    "}",
+  ],
+  "Find Middle": [
+    "function findMiddle(head) {",
+    "  slow = fast = head;",
+    "  while (fast && fast.next) {",
+    "    slow = slow.next;      // 1 step",
+    "    fast = fast.next.next; // 2 steps",
+    "  }",
+    "  return slow;  // Middle node",
+    "}",
+  ],
+  "Pre-Order": [
+    "function preorder(node) {",
+    "  if (!node) return;",
+    "  visit(node);      // Root first",
+    "  preorder(node.left);",
+    "  preorder(node.right);",
+    "}",
+  ],
+  "In-Order": [
+    "function inorder(node) {",
+    "  if (!node) return;",
+    "  inorder(node.left);",
+    "  visit(node);      // Root middle",
+    "  inorder(node.right);",
+    "}",
+  ],
+  "Post-Order": [
+    "function postorder(node) {",
+    "  if (!node) return;",
+    "  postorder(node.left);",
+    "  postorder(node.right);",
+    "  visit(node);      // Root last",
+    "}",
+  ],
+  "Level Order": [
+    "function levelOrder(root) {",
+    "  if (!root) return;",
+    "  queue = [root];",
+    "  while (queue not empty) {",
+    "    node = queue.shift();",
+    "    visit(node);",
+    "    if (node.left) queue.push(node.left);",
+    "    if (node.right) queue.push(node.right);",
+    "  }",
+    "}",
+  ],
 };
 
-// Adapter: convert Algo.Step[] into AlgorithmStep[] used by this Visualizer
-const convertAlgoSteps = (
-  events: Algo.Step[],
-  initialArr: number[] = [64, 34, 25, 12, 22, 11, 90],
-  algoName?: string
-): AlgorithmStep[] => {
-  const arrState = initialArr.slice();
-  const steps: AlgorithmStep[] = [];
-
-  // precise mapping of event types to pseudocode line indices per algorithm
-  const codeMap: Record<string, Record<string, number[]>> = {
-    "Bubble Sort": { compare: [3], swap: [4] },
-    "Selection Sort": { compare: [3], swap: [6] },
-    "Insertion Sort": { compare: [4], shift: [5], insert: [6] },
-    "Merge Sort": { compare: [10, 11], insert: [12] },
-    "Quick Sort": { compare: [4, 5], swap: [6], movePointer: [2] },
-    "Binary Search": { compare: [2, 3], movePointer: [3] },
-    "Linear Search": { compare: [1], found: [2] },
-    
-    "Reverse Linked List": { visit: [2], stack: [3] },
-    "Cycle Detection": { movePointer: [2], found: [5] },
-    "Find Middle": { movePointer: [3,4], found: [6] },
-    "In-Order DFS": { visit: [3] },
-    "Level Order BFS": { queue: [2, 3], visit: [4] },
-    "BFS": { queue: [2], visit: [4] },
-    "DFS": { stack: [2], visit: [4] },
-    "Dijkstra": { relax: [4], visit: [2] },
-    "Topological Sort": { queue: [2], visit: [3] },
-  
-  };
-
-  for (const ev of events) {
-    switch (ev.type) {
-      case "compare": {
-        const i = (ev as any).i;
-        const j = (ev as any).j;
-        const codeLine = algoName && codeMap[algoName] && codeMap[algoName].compare ? codeMap[algoName].compare : [];
-        steps.push({
-          description: `Compare index ${i} and ${j}`,
-          highlight: [i, j].filter((x) => x >= 0),
-          array: [...arrState],
-          codeLine,
-        });
-        break;
-      }
-      case "swap": {
-        const { i, j } = ev as any;
-        [arrState[i], arrState[j]] = [arrState[j], arrState[i]];
-        const codeLine = algoName && codeMap[algoName] && codeMap[algoName].swap ? codeMap[algoName].swap : [];
-        steps.push({
-          description: `Swap index ${i} and ${j}`,
-          highlight: [i, j],
-          array: [...arrState],
-          codeLine,
-        });
-        break;
-      }
-      case "shift": {
-        const { from, to } = ev as any;
-        const val = arrState.splice(from, 1)[0];
-        arrState.splice(to, 0, val);
-        const codeLine = algoName && codeMap[algoName] && codeMap[algoName].shift ? codeMap[algoName].shift : [];
-        steps.push({
-          description: `Shift from ${from} to ${to}`,
-          highlight: [from, to],
-          array: [...arrState],
-          codeLine,
-        });
-        break;
-      }
-      case "insert": {
-        const { index, value } = ev as any;
-        if (index >= 0) arrState.splice(index, 0, value);
-        const codeLine = algoName && codeMap[algoName] && codeMap[algoName].insert ? codeMap[algoName].insert : [];
-        steps.push({
-          description: `Insert ${value} at ${index}`,
-          highlight: index >= 0 ? [index] : [],
-          array: [...arrState],
-          codeLine,
-        });
-        break;
-      }
-      case "movePointer": {
-        const { name, index } = ev as any;
-        const obj: AlgorithmStep = {
-          description: `Move pointer ${name} to ${index}`,
-          highlight: [],
-          array: [...arrState],
-          codeLine: [],
-        };
-        // convey common pointer names used by visualizer
-        if (name === "left") obj.left = index;
-        if (name === "right") obj.right = index;
-        if (name === "key" || name === "pivot") obj.pivot = index;
-        // map to codeLine via codeMap if available
-        const codeLine = algoName && codeMap[algoName] && codeMap[algoName].movePointer ? codeMap[algoName].movePointer : [];
-        if (codeLine.length) obj.codeLine = codeLine;
-        steps.push(obj);
-        break;
-      }
-      case "visit": {
-        const { nodeId } = ev as any;
-        steps.push({
-          description: `Visit ${nodeId}`,
-          highlight: [],
-          array: [...arrState],
-          visited: typeof nodeId === "number" ? [nodeId] : [],
-          codeLine: [],
-        });
-        break;
-      }
-      case "queue": {
-        const { state } = ev as any;
-        steps.push({
-          description: `Queue updated`,
-          highlight: [],
-          array: [...arrState],
-          queue: state as number[],
-          codeLine: [],
-        });
-        break;
-      }
-      case "stack": {
-        const { state } = ev as any;
-        steps.push({
-          description: `Stack updated`,
-          highlight: [],
-          array: [...arrState],
-          stack: state as number[],
-          codeLine: [],
-        });
-        break;
-      }
-      case "relax": {
-        const { node, distance } = ev as any;
-        steps.push({
-          description: `Relax node ${node}, distance=${distance}`,
-          highlight: [node],
-          array: [...arrState],
-          codeLine: [],
-        });
-        break;
-      }
-      case "found": {
-        const { index, node } = ev as any;
-        steps.push({
-          description: `Found ${index ?? node}`,
-          highlight: index !== undefined ? [index] : [],
-          array: [...arrState],
-          found: true,
-          mid: index,
-          codeLine: [],
-        });
-        break;
-      }
-      default:
-        steps.push({ description: "Event", highlight: [], array: [...arrState], codeLine: [] });
-    }
-  }
-
-  if (steps.length === 0) {
-    steps.push({ description: "No steps generated", highlight: [], array: [...arrState], codeLine: [] });
-  }
-
-  return steps;
-};
-
-// Input generators (module scope) so top-level generators can reuse them
-function createLinkedListFromArray(arr: number[]): Algo.ListNode | null {
-  if (!arr || arr.length === 0) return null;
-  let head: Algo.ListNode = { val: arr[0], next: null } as any;
-  let curr = head;
-  for (let i = 1; i < arr.length; i++) {
-    const node: Algo.ListNode = { val: arr[i], next: null } as any;
-    curr.next = node;
-    curr = node;
-  }
-  return head;
-}
-
-function createTreeFromArray(arr: number[]): Algo.TreeNode | null {
-  if (!arr || arr.length === 0) return null;
-  const nodes = arr.map((v, i) => ({ id: i, val: v, left: null as any, right: null as any }));
-  for (let i = 0; i < nodes.length; i++) {
-    const left = 2 * i + 1;
-    const right = 2 * i + 2;
-    if (left < nodes.length) nodes[i].left = nodes[left];
-    if (right < nodes.length) nodes[i].right = nodes[right];
-  }
-  return nodes[0];
-}
-
-function getInputForAlgorithm(name: string) {
-  const defaultArr = [64, 34, 25, 12, 22, 11, 90];
-  switch (name) {
-    case "Binary Search":
-      return { type: "array", data: [11, 12, 22, 25, 34, 64, 90] };
-    case "BFS":
-    case "DFS":
-    case "Dijkstra":
-    case "Topological Sort":
-      return { type: "graph", data: [[1,3],[2,4],[],[4],[5,6],[],[]] };
-    case "Reverse Linked List":
-    case "Cycle Detection":
-    case "Find Middle":
-      return { type: "linkedlist", data: createLinkedListFromArray([1,2,3,4,5,6,7]) };
-    case "In-Order DFS":
-    case "Level Order BFS":
-      return { type: "tree", data: createTreeFromArray([1,2,3,4,5,6,7]) };
-    default:
-      return { type: "array", data: defaultArr };
-  }
-}
-
-// Generate steps by delegating to the algorithms module where possible
-const generateFromAlgo = (name: string): AlgorithmStep[] => {
-  const defaultArr = [64, 34, 25, 12, 22, 11, 90];
-  try {
-    switch (name) {
-      case "Bubble Sort":
-        return convertAlgoSteps(Algo.bubbleSort(defaultArr).steps, defaultArr);
-      case "Selection Sort":
-        return convertAlgoSteps(Algo.selectionSort(defaultArr).steps, defaultArr);
-      case "Insertion Sort":
-        return convertAlgoSteps(Algo.insertionSort(defaultArr).steps, defaultArr);
-      case "Merge Sort":
-        return convertAlgoSteps(Algo.mergeSort(defaultArr).steps, defaultArr);
-      case "Quick Sort":
-        return convertAlgoSteps(Algo.quickSort(defaultArr).steps, defaultArr);
-      case "Linear Search":
-        return convertAlgoSteps(Algo.linearSearch(defaultArr, 25).steps, defaultArr);
-      case "Binary Search":
-        return convertAlgoSteps(Algo.binarySearch([11, 12, 22, 25, 34, 64, 90], 25).steps, [11, 12, 22, 25, 34, 64, 90]);
-      case "Reverse Linked List":
-        return convertAlgoSteps(Algo.reverseLinkedList(createLinkedListFromArray([1,2,3,4,5,6,7])).steps, defaultArr, "Reverse Linked List");
-      case "Cycle Detection":
-        return convertAlgoSteps(Algo.detectCycle(createLinkedListFromArray([1,2,3,4,5,6,7])).steps, defaultArr, "Cycle Detection");
-      case "Find Middle":
-        return convertAlgoSteps(Algo.findMiddle(createLinkedListFromArray([1,2,3,4,5,6,7])).steps, defaultArr, "Find Middle");
-      
-        case "BFS":
-        return convertAlgoSteps(Algo.bfsGraph([[1, 3], [2, 4], [], [4], [5, 6], [], []], 0).steps, defaultArr, "Level Order BFS");
-      case "DFS":
-        return convertAlgoSteps(Algo.dfsGraph([[1, 3], [2, 4], [], [4], [5, 6], [], []], 0).steps, defaultArr, "In-Order DFS");
-      case "Dijkstra":
-        return convertAlgoSteps(Algo.dijkstra([[{ to: 1, weight: 1 }], [{ to: 2, weight: 1 }], []], 0).steps, defaultArr, "Dijkstra");
-      case "Topological Sort":
-        return convertAlgoSteps(Algo.topologicalSort([[1], [2], []]).steps, defaultArr, "Topological Sort");
-      
-        default:
-        return [];
-    }
-  } catch (err) {
-    // If algo module call failed or isn't applicable, return empty steps
-    return [];
-  }
-};
-
-// Generate algorithm-specific steps
+// Step generators
 const generateBubbleSortSteps = (): AlgorithmStep[] => {
   const arr = [64, 34, 25, 12, 22, 11, 90];
   const steps: AlgorithmStep[] = [];
   const sorted: number[] = [];
   
   steps.push({
-    description: "🎯 Starting Bubble Sort: Compare adjacent pairs and swap if left > right. Larger elements 'bubble up' to the end.",
+    description: "Starting Bubble Sort: Compare adjacent pairs and swap if left > right",
     highlight: [],
     array: [...arr],
     sorted: [],
@@ -578,17 +243,9 @@ const generateBubbleSortSteps = (): AlgorithmStep[] => {
   });
 
   for (let i = 0; i < arr.length - 1; i++) {
-    steps.push({
-      description: `📍 Pass ${i + 1}: Scan from start to index ${arr.length - 1 - i}. After this pass, position ${arr.length - 1 - i} will have correct element.`,
-      highlight: [],
-      array: [...arr],
-      sorted: [...sorted],
-      codeLine: [1],
-    });
-
     for (let j = 0; j < arr.length - i - 1; j++) {
       steps.push({
-        description: `🔍 Compare arr[${j}]=${arr[j]} with arr[${j + 1}]=${arr[j + 1]}`,
+        description: `Compare arr[${j}]=${arr[j]} with arr[${j + 1}]=${arr[j + 1]}`,
         highlight: [j, j + 1],
         array: [...arr],
         sorted: [...sorted],
@@ -596,43 +253,233 @@ const generateBubbleSortSteps = (): AlgorithmStep[] => {
       });
       
       if (arr[j] > arr[j + 1]) {
-        const before = arr[j];
-        const after = arr[j + 1];
         [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
         steps.push({
-          description: `🔄 Swap! ${before} > ${after}, so swap positions. Array updated.`,
+          description: `Swap! ${arr[j + 1]} > ${arr[j]}, positions swapped`,
           highlight: [j, j + 1],
           array: [...arr],
           sorted: [...sorted],
           codeLine: [4],
         });
-      } else {
-        steps.push({
-          description: `✓ No swap needed: ${arr[j]} ≤ ${arr[j + 1]}, already in order.`,
-          highlight: [j, j + 1],
-          array: [...arr],
-          sorted: [...sorted],
-          codeLine: [3],
-        });
       }
     }
     sorted.unshift(arr.length - 1 - i);
-    steps.push({
-      description: `✅ Pass ${i + 1} complete! Element ${arr[arr.length - 1 - i]} is now in its final position at index ${arr.length - 1 - i}.`,
-      highlight: [arr.length - 1 - i],
-      array: [...arr],
-      sorted: [...sorted],
-      codeLine: [6, 7],
-    });
   }
   sorted.unshift(0);
   
   steps.push({
-    description: "🎉 Bubble Sort complete! Array is now fully sorted in ascending order.",
+    description: "Bubble Sort complete! Array is sorted",
     highlight: [],
     array: [...arr],
     sorted: Array.from({ length: arr.length }, (_, i) => i),
     codeLine: [8, 9],
+  });
+
+  return steps;
+};
+
+const generateSelectionSortSteps = (): AlgorithmStep[] => {
+  const arr = [64, 34, 25, 12, 22, 11, 90];
+  const steps: AlgorithmStep[] = [];
+  const sorted: number[] = [];
+  
+  steps.push({
+    description: "Starting Selection Sort: Find minimum and swap to front",
+    highlight: [],
+    array: [...arr],
+    sorted: [],
+    codeLine: [0],
+  });
+
+  for (let i = 0; i < arr.length - 1; i++) {
+    let minIdx = i;
+    steps.push({
+      description: `Finding minimum from index ${i} onwards`,
+      highlight: [i],
+      array: [...arr],
+      sorted: [...sorted],
+      codeLine: [2],
+    });
+    
+    for (let j = i + 1; j < arr.length; j++) {
+      steps.push({
+        description: `Compare arr[${minIdx}]=${arr[minIdx]} with arr[${j}]=${arr[j]}`,
+        highlight: [minIdx, j],
+        array: [...arr],
+        sorted: [...sorted],
+        codeLine: [3, 4],
+      });
+      if (arr[j] < arr[minIdx]) minIdx = j;
+    }
+    
+    if (minIdx !== i) {
+      [arr[i], arr[minIdx]] = [arr[minIdx], arr[i]];
+      steps.push({
+        description: `Swap arr[${i}] with arr[${minIdx}] (minimum found)`,
+        highlight: [i, minIdx],
+        array: [...arr],
+        sorted: [...sorted],
+        codeLine: [6],
+      });
+    }
+    sorted.push(i);
+  }
+  sorted.push(arr.length - 1);
+  
+  steps.push({
+    description: "Selection Sort complete!",
+    highlight: [],
+    array: [...arr],
+    sorted: Array.from({ length: arr.length }, (_, i) => i),
+    codeLine: [8, 9],
+  });
+
+  return steps;
+};
+
+const generateInsertionSortSteps = (): AlgorithmStep[] => {
+  const arr = [64, 34, 25, 12, 22, 11, 90];
+  const steps: AlgorithmStep[] = [];
+  
+  steps.push({
+    description: "Starting Insertion Sort: Build sorted portion from left",
+    highlight: [],
+    array: [...arr],
+    sorted: [0],
+    codeLine: [0],
+  });
+
+  for (let i = 1; i < arr.length; i++) {
+    const key = arr[i];
+    let j = i - 1;
+    
+    steps.push({
+      description: `Taking key=${key} at index ${i} to insert into sorted portion`,
+      highlight: [i],
+      array: [...arr],
+      sorted: Array.from({ length: i }, (_, k) => k),
+      pivot: i,
+      codeLine: [2, 3],
+    });
+    
+    while (j >= 0 && arr[j] > key) {
+      steps.push({
+        description: `arr[${j}]=${arr[j]} > ${key}, shifting right`,
+        highlight: [j, j + 1],
+        array: [...arr],
+        sorted: Array.from({ length: i }, (_, k) => k),
+        codeLine: [4, 5],
+      });
+      arr[j + 1] = arr[j];
+      steps.push({
+        description: `Shifted ${arr[j]} to position ${j + 1}`,
+        highlight: [j + 1],
+        array: [...arr],
+        sorted: Array.from({ length: i }, (_, k) => k),
+        codeLine: [5],
+      });
+      j--;
+    }
+    
+    arr[j + 1] = key;
+    steps.push({
+      description: `Inserted ${key} at position ${j + 1}`,
+      highlight: [j + 1],
+      array: [...arr],
+      sorted: Array.from({ length: i + 1 }, (_, k) => k),
+      codeLine: [8],
+    });
+  }
+  
+  steps.push({
+    description: "Insertion Sort complete!",
+    highlight: [],
+    array: [...arr],
+    sorted: Array.from({ length: arr.length }, (_, i) => i),
+    codeLine: [9],
+  });
+
+  return steps;
+};
+
+const generateMergeSortSteps = (): AlgorithmStep[] => {
+  const steps: AlgorithmStep[] = [];
+  const originalArr = [64, 34, 25, 12, 22, 11, 90];
+  
+  // Simulated merge sort steps for visualization
+  steps.push({
+    description: "Starting Merge Sort: Divide array into halves recursively",
+    highlight: [],
+    array: [64, 34, 25, 12, 22, 11, 90],
+    codeLine: [0, 1],
+  });
+  
+  steps.push({
+    description: "Divide: [64, 34, 25] | [12, 22, 11, 90]",
+    highlight: [0, 1, 2, 3, 4, 5, 6],
+    array: [64, 34, 25, 12, 22, 11, 90],
+    left: 0,
+    right: 2,
+    codeLine: [2, 3, 4],
+  });
+  
+  steps.push({
+    description: "Left half: Divide [64, 34, 25] → [64] | [34, 25]",
+    highlight: [0, 1, 2],
+    array: [64, 34, 25, 12, 22, 11, 90],
+    codeLine: [3],
+  });
+  
+  steps.push({
+    description: "Merge: Compare 34 and 25 → [25, 34]",
+    highlight: [1, 2],
+    array: [64, 25, 34, 12, 22, 11, 90],
+    codeLine: [9, 10],
+  });
+  
+  steps.push({
+    description: "Merge: [25, 34] with [64] → [25, 34, 64]",
+    highlight: [0, 1, 2],
+    array: [25, 34, 64, 12, 22, 11, 90],
+    sorted: [0, 1, 2],
+    codeLine: [5],
+  });
+  
+  steps.push({
+    description: "Right half: Divide [12, 22, 11, 90] → [12, 22] | [11, 90]",
+    highlight: [3, 4, 5, 6],
+    array: [25, 34, 64, 12, 22, 11, 90],
+    codeLine: [4],
+  });
+  
+  steps.push({
+    description: "Merge: [12, 22] already sorted, [11, 90] already sorted",
+    highlight: [3, 4, 5, 6],
+    array: [25, 34, 64, 12, 22, 11, 90],
+    codeLine: [9, 10],
+  });
+  
+  steps.push({
+    description: "Merge: [12, 22] with [11, 90] → [11, 12, 22, 90]",
+    highlight: [3, 4, 5, 6],
+    array: [25, 34, 64, 11, 12, 22, 90],
+    sorted: [0, 1, 2, 3, 4, 5, 6],
+    codeLine: [5],
+  });
+  
+  steps.push({
+    description: "Final merge: [25, 34, 64] with [11, 12, 22, 90]",
+    highlight: [0, 1, 2, 3, 4, 5, 6],
+    array: [25, 34, 64, 11, 12, 22, 90],
+    codeLine: [5],
+  });
+  
+  steps.push({
+    description: "Merge Sort complete! → [11, 12, 22, 25, 34, 64, 90]",
+    highlight: [],
+    array: [11, 12, 22, 25, 34, 64, 90],
+    sorted: Array.from({ length: 7 }, (_, i) => i),
+    codeLine: [5, 6],
   });
 
   return steps;
@@ -643,189 +490,150 @@ const generateQuickSortSteps = (): AlgorithmStep[] => {
   const arr = [64, 34, 25, 12, 22, 11, 90];
   
   steps.push({
-    description: "Initial array - Quick Sort uses divide and conquer with a pivot",
+    description: "Starting Quick Sort: Choose pivot, partition, recurse",
     highlight: [],
     array: [...arr],
-    sorted: [],
     codeLine: [0, 1],
   });
 
-  const quickSort = (array: number[], low: number, high: number, sorted: number[]) => {
-    if (low < high) {
-      const pivot = array[high];
-      steps.push({
-        description: `Choose pivot: ${pivot} (last element)`,
-        highlight: [high],
-        array: [...array],
-        pivot: high,
-        sorted: [...sorted],
-        codeLine: [2],
-      });
-
-      let i = low - 1;
-      
-      for (let j = low; j < high; j++) {
-        steps.push({
-          description: `Compare ${array[j]} with pivot ${pivot}`,
-          highlight: [j, high],
-          array: [...array],
-          pivot: high,
-          sorted: [...sorted],
-          codeLine: [4, 5],
-        });
-        
-        if (array[j] < pivot) {
-          i++;
-          if (i !== j) {
-            [array[i], array[j]] = [array[j], array[i]];
-            steps.push({
-              description: `${array[j]} < ${pivot}, swap to position ${i}`,
-              highlight: [i, j],
-              array: [...array],
-              pivot: high,
-              sorted: [...sorted],
-              codeLine: [6],
-            });
-          }
-        }
-      }
-      
-      [array[i + 1], array[high]] = [array[high], array[i + 1]];
-      const pivotIndex = i + 1;
-      sorted.push(pivotIndex);
-      
-      steps.push({
-        description: `Place pivot ${pivot} at correct position ${pivotIndex}`,
-        highlight: [pivotIndex],
-        array: [...array],
-        sorted: [...sorted],
-        codeLine: [9, 10],
-      });
-
-      quickSort(array, low, pivotIndex - 1, sorted);
-      quickSort(array, pivotIndex + 1, high, sorted);
-    } else if (low === high) {
-      sorted.push(low);
-    }
-  };
-
-  const sortedIndices: number[] = [];
-  quickSort([...arr], 0, arr.length - 1, sortedIndices);
+  // First partition with pivot 90
+  steps.push({
+    description: "Choose pivot: 90 (last element)",
+    highlight: [6],
+    array: [64, 34, 25, 12, 22, 11, 90],
+    pivot: 6,
+    codeLine: [2],
+  });
   
   steps.push({
-    description: "Array is now sorted!",
+    description: "All elements < 90, pivot goes to end (already there)",
+    highlight: [6],
+    array: [64, 34, 25, 12, 22, 11, 90],
+    pivot: 6,
+    sorted: [6],
+    codeLine: [9],
+  });
+  
+  // Recurse on left [64, 34, 25, 12, 22, 11], pivot 11
+  steps.push({
+    description: "Recurse left: [64, 34, 25, 12, 22, 11], pivot = 11",
+    highlight: [5],
+    array: [64, 34, 25, 12, 22, 11, 90],
+    pivot: 5,
+    codeLine: [2, 11],
+  });
+  
+  steps.push({
+    description: "Compare elements with pivot 11, swap smaller elements",
+    highlight: [0, 5],
+    array: [64, 34, 25, 12, 22, 11, 90],
+    codeLine: [4, 5],
+  });
+  
+  steps.push({
+    description: "11 is smallest, moves to position 0",
+    highlight: [0],
+    array: [11, 34, 25, 12, 22, 64, 90],
+    pivot: 0,
+    sorted: [0, 6],
+    codeLine: [9, 10],
+  });
+  
+  // Continue partitioning
+  steps.push({
+    description: "Recurse: [34, 25, 12, 22, 64], pivot = 64",
+    highlight: [5],
+    array: [11, 34, 25, 12, 22, 64, 90],
+    pivot: 5,
+    codeLine: [2],
+  });
+  
+  steps.push({
+    description: "All elements < 64, 64 stays at position 5",
+    highlight: [5],
+    array: [11, 34, 25, 12, 22, 64, 90],
+    sorted: [0, 5, 6],
+    codeLine: [9],
+  });
+  
+  steps.push({
+    description: "Recurse: [34, 25, 12, 22], pivot = 22",
+    highlight: [4],
+    array: [11, 34, 25, 12, 22, 64, 90],
+    pivot: 4,
+    codeLine: [2],
+  });
+  
+  steps.push({
+    description: "Partitioning around 22: 12 < 22",
+    highlight: [3, 4],
+    array: [11, 34, 25, 12, 22, 64, 90],
+    codeLine: [5, 6],
+  });
+  
+  steps.push({
+    description: "After partition: [12, 22, 25, 34]",
+    highlight: [1, 2, 3, 4],
+    array: [11, 12, 22, 25, 34, 64, 90],
+    sorted: [0, 1, 2, 5, 6],
+    codeLine: [9],
+  });
+  
+  steps.push({
+    description: "Quick Sort complete!",
     highlight: [],
     array: [11, 12, 22, 25, 34, 64, 90],
-    sorted: Array.from({ length: arr.length }, (_, i) => i),
+    sorted: Array.from({ length: 7 }, (_, i) => i),
     codeLine: [14],
   });
 
   return steps;
 };
 
-const generateMergeSortSteps = (): AlgorithmStep[] => {
+const generateLinearSearchSteps = (): AlgorithmStep[] => {
+  const arr = [64, 34, 25, 12, 22, 11, 90];
+  const target = 22;
   const steps: AlgorithmStep[] = [];
   
   steps.push({
-    description: "Initial array - Merge Sort divides array into halves recursively",
+    description: `Linear Search: Find ${target} by checking each element`,
     highlight: [],
-    array: [64, 34, 25, 12, 22, 11, 90],
-    sorted: [],
-    codeLine: [0, 1],
+    array: arr,
+    codeLine: [0],
   });
 
-  steps.push({
-    description: "Divide: Split array into [64, 34, 25] and [12, 22, 11, 90]",
-    highlight: [0, 1, 2],
-    array: [64, 34, 25, 12, 22, 11, 90],
-    left: 0,
-    right: 2,
-    codeLine: [2, 3, 4],
-  });
-
-  steps.push({
-    description: "Divide: Split [64, 34, 25] into [64] and [34, 25]",
-    highlight: [0],
-    array: [64, 34, 25, 12, 22, 11, 90],
-    codeLine: [3],
-  });
-
-  steps.push({
-    description: "Divide: Split [34, 25] into [34] and [25]",
-    highlight: [1, 2],
-    array: [64, 34, 25, 12, 22, 11, 90],
-    codeLine: [3, 4],
-  });
-
-  steps.push({
-    description: "Merge: Compare 34 and 25, 25 is smaller",
-    highlight: [1, 2],
-    array: [64, 34, 25, 12, 22, 11, 90],
-    codeLine: [10, 11],
-  });
-
-  steps.push({
-    description: "Merge: [25, 34] is now sorted",
-    highlight: [1, 2],
-    array: [64, 25, 34, 12, 22, 11, 90],
-    codeLine: [12],
-  });
-
-  steps.push({
-    description: "Merge: Compare 64 with [25, 34] - 25 < 64",
-    highlight: [0, 1, 2],
-    array: [64, 25, 34, 12, 22, 11, 90],
-    codeLine: [11, 12],
-  });
-
-  steps.push({
-    description: "Merge: [25, 34, 64] is now sorted",
-    highlight: [0, 1, 2],
-    array: [25, 34, 64, 12, 22, 11, 90],
-    sorted: [0, 1, 2],
-    codeLine: [16],
-  });
-
-  steps.push({
-    description: "Now sort right half: [12, 22, 11, 90]",
-    highlight: [3, 4, 5, 6],
-    array: [25, 34, 64, 12, 22, 11, 90],
-    codeLine: [4],
-  });
-
-  steps.push({
-    description: "After sorting right half: [11, 12, 22, 90]",
-    highlight: [3, 4, 5, 6],
-    array: [25, 34, 64, 11, 12, 22, 90],
-    sorted: [3, 4, 5, 6],
-    codeLine: [5],
-  });
-
-  steps.push({
-    description: "Final merge: Compare elements from both halves",
-    highlight: [0, 3],
-    array: [25, 34, 64, 11, 12, 22, 90],
-    codeLine: [10, 11],
-  });
-
-  steps.push({
-    description: "Array is now sorted!",
-    highlight: [],
-    array: [11, 12, 22, 25, 34, 64, 90],
-    sorted: Array.from({ length: 7 }, (_, i) => i),
-    codeLine: [16],
-  });
+  for (let i = 0; i < arr.length; i++) {
+    if (arr[i] === target) {
+      steps.push({
+        description: `Found! arr[${i}] = ${target}`,
+        highlight: [i],
+        array: arr,
+        found: true,
+        mid: i,
+        codeLine: [2, 3],
+      });
+      break;
+    } else {
+      steps.push({
+        description: `arr[${i}] = ${arr[i]} ≠ ${target}, continue`,
+        highlight: [i],
+        array: arr,
+        codeLine: [1, 2],
+      });
+    }
+  }
 
   return steps;
 };
 
 const generateBinarySearchSteps = (): AlgorithmStep[] => {
+  // Use sorted array, target at position that requires full traversal
   const arr = [11, 12, 22, 25, 34, 64, 90];
-  const target = 25;
+  const target = 90; // Target at the end to show more steps
   const steps: AlgorithmStep[] = [];
 
   steps.push({
-    description: `🎯 Binary Search: Find ${target} in a sorted array. We repeatedly halve the search space by comparing with the middle element.`,
+    description: `Binary Search: Find ${target} in sorted array by halving search space`,
     highlight: [],
     array: arr,
     sorted: Array.from({ length: arr.length }, (_, i) => i),
@@ -839,7 +647,7 @@ const generateBinarySearchSteps = (): AlgorithmStep[] => {
     const mid = Math.floor((left + right) / 2);
     
     steps.push({
-      description: `📍 Search range: [${left}, ${right}]. Middle index = ⌊(${left}+${right})/2⌋ = ${mid}. Value at mid = ${arr[mid]}`,
+      description: `Search [${left}..${right}], mid=${mid}, arr[${mid}]=${arr[mid]}`,
       highlight: [mid],
       array: arr,
       left,
@@ -850,7 +658,7 @@ const generateBinarySearchSteps = (): AlgorithmStep[] => {
 
     if (arr[mid] === target) {
       steps.push({
-        description: `🎉 Found! arr[${mid}] = ${target}. Target located at index ${mid}!`,
+        description: `Found! arr[${mid}] = ${target}`,
         highlight: [mid],
         array: arr,
         found: true,
@@ -860,22 +668,22 @@ const generateBinarySearchSteps = (): AlgorithmStep[] => {
       break;
     } else if (arr[mid] < target) {
       steps.push({
-        description: `➡️ arr[${mid}]=${arr[mid]} < ${target}. Target must be in RIGHT half. Update left = ${mid + 1}`,
+        description: `${arr[mid]} < ${target}, search right half`,
         highlight: Array.from({ length: right - mid }, (_, i) => mid + 1 + i),
         array: arr,
         left: mid + 1,
         right,
-        codeLine: [7, 8],
+        codeLine: [6, 7],
       });
       left = mid + 1;
     } else {
       steps.push({
-        description: `⬅️ arr[${mid}]=${arr[mid]} > ${target}. Target must be in LEFT half. Update right = ${mid - 1}`,
+        description: `${arr[mid]} > ${target}, search left half`,
         highlight: Array.from({ length: mid - left }, (_, i) => left + i),
         array: arr,
         left,
         right: mid - 1,
-        codeLine: [9, 10],
+        codeLine: [8, 9],
       });
       right = mid - 1;
     }
@@ -888,15 +696,15 @@ const generateBFSSteps = (): AlgorithmStep[] => {
   const steps: AlgorithmStep[] = [];
   
   steps.push({
-    description: "🎯 BFS (Breadth-First Search): Explores all neighbors at current depth before moving deeper. Uses a QUEUE (FIFO) to track nodes.",
+    description: "BFS: Explore level by level using a Queue (FIFO)",
     highlight: [],
     visited: [],
     queue: [],
-    codeLine: [0, 1, 2],
+    codeLine: [0, 1],
   });
 
   steps.push({
-    description: "📍 Initialize: Start from node 0. Add it to the queue. Queue = [0]",
+    description: "Start from node 0, add to queue",
     highlight: [0],
     visited: [],
     queue: [0],
@@ -905,74 +713,74 @@ const generateBFSSteps = (): AlgorithmStep[] => {
   });
 
   steps.push({
-    description: "🔍 Dequeue 0, mark visited. Check neighbors: 1, 3. Both unvisited → add to queue.",
+    description: "Dequeue 0, mark visited, add neighbors 1, 2 to queue",
     highlight: [0],
     visited: [0],
-    queue: [1, 3],
+    queue: [1, 2],
     current: 0,
-    codeLine: [4, 6, 7, 8, 9],
+    codeLine: [4, 5, 6, 7, 8, 9],
   });
 
   steps.push({
-    description: "🔍 Dequeue 1 (front of queue), mark visited. Neighbors: 2, 4. Both unvisited → add to queue.",
+    description: "Dequeue 1, mark visited, add neighbors 3, 4 to queue",
     highlight: [1],
     visited: [0, 1],
-    queue: [3, 2, 4],
+    queue: [2, 3, 4],
     current: 1,
-    codeLine: [4, 6, 7, 8, 9],
+    codeLine: [4, 5, 6, 7, 8, 9],
   });
 
   steps.push({
-    description: "🔍 Dequeue 3, mark visited. Neighbor 4 is already in queue (will be visited soon).",
+    description: "Dequeue 2, mark visited, add neighbors 5, 6 to queue",
+    highlight: [2],
+    visited: [0, 1, 2],
+    queue: [3, 4, 5, 6],
+    current: 2,
+    codeLine: [4, 5, 6, 7, 8, 9],
+  });
+
+  steps.push({
+    description: "Dequeue 3, mark visited, no new neighbors",
     highlight: [3],
-    visited: [0, 1, 3],
-    queue: [2, 4],
+    visited: [0, 1, 2, 3],
+    queue: [4, 5, 6],
     current: 3,
     codeLine: [4, 5, 6],
   });
 
   steps.push({
-    description: "🔍 Dequeue 2, mark visited. No unvisited neighbors. Queue unchanged.",
-    highlight: [2],
-    visited: [0, 1, 3, 2],
-    queue: [4],
-    current: 2,
-    codeLine: [4, 6],
-  });
-
-  steps.push({
-    description: "🔍 Dequeue 4, mark visited. Neighbors: 5, 6. Both unvisited → add to queue.",
+    description: "Dequeue 4, mark visited, no new neighbors",
     highlight: [4],
-    visited: [0, 1, 3, 2, 4],
+    visited: [0, 1, 2, 3, 4],
     queue: [5, 6],
     current: 4,
-    codeLine: [7, 8, 9],
+    codeLine: [4, 5, 6],
   });
 
   steps.push({
-    description: "🔍 Dequeue 5, mark visited. No unvisited neighbors.",
+    description: "Dequeue 5, mark visited",
     highlight: [5],
-    visited: [0, 1, 3, 2, 4, 5],
+    visited: [0, 1, 2, 3, 4, 5],
     queue: [6],
     current: 5,
-    codeLine: [4, 6],
+    codeLine: [4, 5, 6],
   });
 
   steps.push({
-    description: "🔍 Dequeue 6, mark visited. No unvisited neighbors. Queue is now empty!",
+    description: "Dequeue 6, mark visited, queue empty",
     highlight: [6],
-    visited: [0, 1, 3, 2, 4, 5, 6],
+    visited: [0, 1, 2, 3, 4, 5, 6],
     queue: [],
     current: 6,
-    codeLine: [4, 6],
+    codeLine: [4, 5, 6],
   });
 
   steps.push({
-    description: "🎉 BFS Complete! Traversal order: 0 → 1 → 3 → 2 → 4 → 5 → 6. Notice: nodes at same depth are visited together.",
+    description: "BFS Complete! Order: 0→1→2→3→4→5→6 (level by level)",
     highlight: [],
-    visited: [0, 1, 3, 2, 4, 5, 6],
+    visited: [0, 1, 2, 3, 4, 5, 6],
     queue: [],
-    codeLine: [13],
+    codeLine: [12],
   });
 
   return steps;
@@ -982,15 +790,15 @@ const generateDFSSteps = (): AlgorithmStep[] => {
   const steps: AlgorithmStep[] = [];
   
   steps.push({
-    description: "🎯 DFS (Depth-First Search): Explores as deep as possible before backtracking. Uses a STACK (LIFO) to track nodes.",
+    description: "DFS: Go deep before backtracking using a Stack (LIFO)",
     highlight: [],
     visited: [],
     stack: [],
-    codeLine: [0, 1, 2],
+    codeLine: [0, 1],
   });
 
   steps.push({
-    description: "📍 Initialize: Start from node 0. Push it to the stack. Stack = [0]",
+    description: "Start from node 0, push to stack",
     highlight: [0],
     visited: [],
     stack: [0],
@@ -999,171 +807,530 @@ const generateDFSSteps = (): AlgorithmStep[] => {
   });
 
   steps.push({
-    description: "🔍 Pop 0, mark visited. Push unvisited neighbors (1, 3) to stack. Go deep first!",
+    description: "Pop 0, mark visited, push neighbors 2, 1 to stack",
     highlight: [0],
     visited: [0],
-    stack: [3, 1],
+    stack: [2, 1],
     current: 0,
-    codeLine: [4, 6, 7, 8, 9],
+    codeLine: [4, 5, 6, 7, 8, 9],
   });
 
   steps.push({
-    description: "🔍 Pop 1 (top of stack), mark visited. Push neighbors (2, 4) to stack.",
+    description: "Pop 1, mark visited, push neighbors 4, 3 to stack",
     highlight: [1],
     visited: [0, 1],
-    stack: [3, 4, 2],
+    stack: [2, 4, 3],
     current: 1,
-    codeLine: [4, 6, 7, 8, 9],
+    codeLine: [4, 5, 6, 7, 8, 9],
   });
 
   steps.push({
-    description: "🔍 Pop 2 (top), mark visited. No unvisited neighbors → backtrack!",
-    highlight: [2],
-    visited: [0, 1, 2],
-    stack: [3, 4],
-    current: 2,
-    codeLine: [4, 5, 6],
-  });
-
-  steps.push({
-    description: "↩️ Backtrack! Pop 4, mark visited. Push unvisited neighbors (5, 6).",
-    highlight: [4],
-    visited: [0, 1, 2, 4],
-    stack: [3, 6, 5],
-    current: 4,
-    codeLine: [7, 8, 9],
-  });
-
-  steps.push({
-    description: "🔍 Pop 5, mark visited. No unvisited neighbors.",
-    highlight: [5],
-    visited: [0, 1, 2, 4, 5],
-    stack: [3, 6],
-    current: 5,
-    codeLine: [4, 5, 6],
-  });
-
-  steps.push({
-    description: "🔍 Pop 6, mark visited. No unvisited neighbors.",
-    highlight: [6],
-    visited: [0, 1, 2, 4, 5, 6],
-    stack: [3],
-    current: 6,
-    codeLine: [4, 5, 6],
-  });
-
-  steps.push({
-    description: "🔍 Pop 3, mark visited. Neighbor 4 already visited. Stack empty!",
+    description: "Pop 3, mark visited (leaf node)",
     highlight: [3],
-    visited: [0, 1, 2, 4, 5, 6, 3],
-    stack: [],
+    visited: [0, 1, 3],
+    stack: [2, 4],
     current: 3,
     codeLine: [4, 5, 6],
   });
 
   steps.push({
-    description: "🎉 DFS Complete! Traversal order: 0 → 1 → 2 → 4 → 5 → 6 → 3. Notice: went deep before exploring siblings.",
-    highlight: [],
-    visited: [0, 1, 2, 4, 5, 6, 3],
+    description: "Pop 4, mark visited (leaf node)",
+    highlight: [4],
+    visited: [0, 1, 3, 4],
+    stack: [2],
+    current: 4,
+    codeLine: [4, 5, 6],
+  });
+
+  steps.push({
+    description: "Pop 2, mark visited, push neighbors 6, 5 to stack",
+    highlight: [2],
+    visited: [0, 1, 3, 4, 2],
+    stack: [6, 5],
+    current: 2,
+    codeLine: [4, 5, 6, 7, 8, 9],
+  });
+
+  steps.push({
+    description: "Pop 5, mark visited",
+    highlight: [5],
+    visited: [0, 1, 3, 4, 2, 5],
+    stack: [6],
+    current: 5,
+    codeLine: [4, 5, 6],
+  });
+
+  steps.push({
+    description: "Pop 6, mark visited, stack empty",
+    highlight: [6],
+    visited: [0, 1, 3, 4, 2, 5, 6],
     stack: [],
-    codeLine: [13],
+    current: 6,
+    codeLine: [4, 5, 6],
+  });
+
+  steps.push({
+    description: "DFS Complete! Order: 0→1→3→4→2→5→6 (depth first)",
+    highlight: [],
+    visited: [0, 1, 3, 4, 2, 5, 6],
+    stack: [],
+    codeLine: [12],
   });
 
   return steps;
 };
 
+const generateReverseLinkedListSteps = (): AlgorithmStep[] => {
+  const steps: AlgorithmStep[] = [];
+  
+  steps.push({
+    description: "Reverse Linked List: Use three pointers prev, curr, next",
+    highlight: [],
+    pointers: { prev: -1, curr: 0 },
+    codeLine: [0, 1],
+  });
+
+  const nodes = [1, 2, 3, 4, 5];
+  for (let i = 0; i < nodes.length; i++) {
+    steps.push({
+      description: `At node ${nodes[i]}: Save next, reverse pointer to prev`,
+      highlight: [i],
+      pointers: { prev: i - 1, curr: i },
+      codeLine: [3, 4],
+    });
+    
+    steps.push({
+      description: `Node ${nodes[i]}.next now points to ${i > 0 ? nodes[i - 1] : 'null'}`,
+      highlight: [i],
+      pointers: { prev: i, curr: i + 1 },
+      codeLine: [5, 6],
+    });
+  }
+  
+  steps.push({
+    description: "Reversal complete! List is now 5→4→3→2→1→null",
+    highlight: [],
+    pointers: { prev: 4, curr: -1 },
+    codeLine: [8],
+  });
+
+  return steps;
+};
+
+const generateCycleDetectionSteps = (): AlgorithmStep[] => {
+  const steps: AlgorithmStep[] = [];
+  // Simulating a cycle: 1→2→3→4→5→3 (back to 3)
+  
+  steps.push({
+    description: "Cycle Detection: Floyd's algorithm with slow (1 step) and fast (2 steps) pointers",
+    highlight: [],
+    pointers: { slow: 0, fast: 0 },
+    codeLine: [0, 1],
+  });
+
+  // Step 1
+  steps.push({
+    description: "Step 1: slow moves to 2, fast moves to 3",
+    highlight: [1, 2],
+    pointers: { slow: 1, fast: 2 },
+    codeLine: [3, 4],
+  });
+
+  // Step 2
+  steps.push({
+    description: "Step 2: slow moves to 3, fast moves to 5",
+    highlight: [2, 4],
+    pointers: { slow: 2, fast: 4 },
+    codeLine: [3, 4],
+  });
+
+  // Step 3
+  steps.push({
+    description: "Step 3: slow moves to 4, fast moves to 4 (through cycle)",
+    highlight: [3, 3],
+    pointers: { slow: 3, fast: 3 },
+    codeLine: [3, 4],
+  });
+
+  steps.push({
+    description: "Cycle detected! slow == fast at node 4",
+    highlight: [3],
+    pointers: { slow: 3, fast: 3 },
+    found: true,
+    codeLine: [5, 6],
+  });
+
+  return steps;
+};
+
+const generateFindMiddleSteps = (): AlgorithmStep[] => {
+  const steps: AlgorithmStep[] = [];
+  
+  steps.push({
+    description: "Find Middle: slow moves 1 step, fast moves 2 steps",
+    highlight: [],
+    pointers: { slow: 0, fast: 0 },
+    codeLine: [0, 1],
+  });
+
+  // For 7 nodes: 1,2,3,4,5,6,7
+  steps.push({
+    description: "Step 1: slow at 2, fast at 3",
+    highlight: [1, 2],
+    pointers: { slow: 1, fast: 2 },
+    codeLine: [2, 3, 4],
+  });
+
+  steps.push({
+    description: "Step 2: slow at 3, fast at 5",
+    highlight: [2, 4],
+    pointers: { slow: 2, fast: 4 },
+    codeLine: [2, 3, 4],
+  });
+
+  steps.push({
+    description: "Step 3: slow at 4, fast at 7",
+    highlight: [3, 6],
+    pointers: { slow: 3, fast: 6 },
+    codeLine: [2, 3, 4],
+  });
+
+  steps.push({
+    description: "Fast reached end! Middle node is 4",
+    highlight: [3],
+    pointers: { slow: 3, fast: 6 },
+    found: true,
+    mid: 3,
+    codeLine: [6],
+  });
+
+  return steps;
+};
+
+const generatePreOrderSteps = (): AlgorithmStep[] => {
+  // Tree:       1
+  //           /   \
+  //          2     3
+  //         / \   / \
+  //        4   5 6   7
+  const steps: AlgorithmStep[] = [];
+  
+  steps.push({
+    description: "Pre-Order: Visit Root → Left → Right",
+    highlight: [],
+    visited: [],
+    codeLine: [0],
+  });
+
+  const order = [0, 1, 3, 4, 2, 5, 6]; // Tree indices in pre-order
+  const names = [1, 2, 4, 5, 3, 6, 7]; // Node values
+  
+  for (let i = 0; i < order.length; i++) {
+    steps.push({
+      description: `Visit node ${names[i]}`,
+      highlight: [order[i]],
+      visited: order.slice(0, i + 1),
+      current: order[i],
+      codeLine: [2],
+    });
+  }
+
+  steps.push({
+    description: "Pre-Order complete: 1→2→4→5→3→6→7",
+    highlight: [],
+    visited: order,
+    codeLine: [5],
+  });
+
+  return steps;
+};
+
+const generateInOrderSteps = (): AlgorithmStep[] => {
+  const steps: AlgorithmStep[] = [];
+  
+  steps.push({
+    description: "In-Order: Visit Left → Root → Right (gives sorted order for BST)",
+    highlight: [],
+    visited: [],
+    codeLine: [0],
+  });
+
+  const order = [3, 1, 4, 0, 5, 2, 6]; // Tree indices in in-order
+  const names = [4, 2, 5, 1, 6, 3, 7]; // Node values
+  
+  for (let i = 0; i < order.length; i++) {
+    steps.push({
+      description: `Visit node ${names[i]}`,
+      highlight: [order[i]],
+      visited: order.slice(0, i + 1),
+      current: order[i],
+      codeLine: [3],
+    });
+  }
+
+  steps.push({
+    description: "In-Order complete: 4→2→5→1→6→3→7",
+    highlight: [],
+    visited: order,
+    codeLine: [5],
+  });
+
+  return steps;
+};
+
+const generatePostOrderSteps = (): AlgorithmStep[] => {
+  const steps: AlgorithmStep[] = [];
+  
+  steps.push({
+    description: "Post-Order: Visit Left → Right → Root",
+    highlight: [],
+    visited: [],
+    codeLine: [0],
+  });
+
+  const order = [3, 4, 1, 5, 6, 2, 0]; // Tree indices in post-order
+  const names = [4, 5, 2, 6, 7, 3, 1]; // Node values
+  
+  for (let i = 0; i < order.length; i++) {
+    steps.push({
+      description: `Visit node ${names[i]}`,
+      highlight: [order[i]],
+      visited: order.slice(0, i + 1),
+      current: order[i],
+      codeLine: [4],
+    });
+  }
+
+  steps.push({
+    description: "Post-Order complete: 4→5→2→6→7→3→1",
+    highlight: [],
+    visited: order,
+    codeLine: [5],
+  });
+
+  return steps;
+};
+
+const generateLevelOrderSteps = (): AlgorithmStep[] => {
+  const steps: AlgorithmStep[] = [];
+  
+  steps.push({
+    description: "Level-Order (BFS): Visit level by level using queue",
+    highlight: [],
+    visited: [],
+    queue: [],
+    codeLine: [0, 1],
+  });
+
+  steps.push({
+    description: "Add root (1) to queue",
+    highlight: [0],
+    visited: [],
+    queue: [0],
+    codeLine: [2],
+  });
+
+  const order = [0, 1, 2, 3, 4, 5, 6];
+  const names = [1, 2, 3, 4, 5, 6, 7];
+  
+  steps.push({
+    description: "Dequeue 1, add children 2, 3",
+    highlight: [0],
+    visited: [0],
+    queue: [1, 2],
+    current: 0,
+    codeLine: [4, 5, 6, 7],
+  });
+
+  steps.push({
+    description: "Dequeue 2, add children 4, 5",
+    highlight: [1],
+    visited: [0, 1],
+    queue: [2, 3, 4],
+    current: 1,
+    codeLine: [4, 5, 6, 7],
+  });
+
+  steps.push({
+    description: "Dequeue 3, add children 6, 7",
+    highlight: [2],
+    visited: [0, 1, 2],
+    queue: [3, 4, 5, 6],
+    current: 2,
+    codeLine: [4, 5, 6, 7],
+  });
+
+  steps.push({
+    description: "Dequeue 4 (leaf)",
+    highlight: [3],
+    visited: [0, 1, 2, 3],
+    queue: [4, 5, 6],
+    current: 3,
+    codeLine: [4, 5],
+  });
+
+  steps.push({
+    description: "Dequeue 5 (leaf)",
+    highlight: [4],
+    visited: [0, 1, 2, 3, 4],
+    queue: [5, 6],
+    current: 4,
+    codeLine: [4, 5],
+  });
+
+  steps.push({
+    description: "Dequeue 6 (leaf)",
+    highlight: [5],
+    visited: [0, 1, 2, 3, 4, 5],
+    queue: [6],
+    current: 5,
+    codeLine: [4, 5],
+  });
+
+  steps.push({
+    description: "Dequeue 7 (leaf), queue empty",
+    highlight: [6],
+    visited: [0, 1, 2, 3, 4, 5, 6],
+    queue: [],
+    current: 6,
+    codeLine: [4, 5],
+  });
+
+  steps.push({
+    description: "Level-Order complete: 1→2→3→4→5→6→7",
+    highlight: [],
+    visited: order,
+    queue: [],
+    codeLine: [9],
+  });
+
+  return steps;
+};
+
+// Graph Visualization Component
 const GraphVisualization = ({ step }: { step: AlgorithmStep }) => {
+  // Larger, cleaner graph layout - Binary tree structure
   const nodes = [
-    { id: 0, x: 50, y: 30 },
-    { id: 1, x: 150, y: 30 },
-    { id: 2, x: 250, y: 30 },
-    { id: 3, x: 50, y: 110 },
-    { id: 4, x: 150, y: 110 },
-    { id: 5, x: 250, y: 110 },
-    { id: 6, x: 150, y: 190 },
+    { id: 0, x: 200, y: 40, label: "0" },
+    { id: 1, x: 100, y: 120, label: "1" },
+    { id: 2, x: 300, y: 120, label: "2" },
+    { id: 3, x: 50, y: 200, label: "3" },
+    { id: 4, x: 150, y: 200, label: "4" },
+    { id: 5, x: 250, y: 200, label: "5" },
+    { id: 6, x: 350, y: 200, label: "6" },
   ];
 
   const edges = [
-    [0, 1], [1, 2], [0, 3], [1, 4], [3, 4], [4, 5], [4, 6]
+    [0, 1], [0, 2], [1, 3], [1, 4], [2, 5], [2, 6]
   ];
 
   return (
-    <div className="flex flex-col items-center gap-4">
-      <svg width="320" height="220" className="mx-auto">
+    <div className="flex flex-col items-center gap-6">
+      <svg width="400" height="260" className="mx-auto" viewBox="0 0 400 260">
+        {/* Edges */}
         {edges.map(([from, to], i) => (
-          <line
+          <motion.line
             key={i}
-            x1={nodes[from].x + 20}
-            y1={nodes[from].y + 20}
-            x2={nodes[to].x + 20}
-            y2={nodes[to].y + 20}
+            x1={nodes[from].x}
+            y1={nodes[from].y}
+            x2={nodes[to].x}
+            y2={nodes[to].y}
             stroke="hsl(var(--muted-foreground))"
             strokeWidth="2"
-            opacity="0.5"
+            opacity="0.4"
+            initial={{ pathLength: 0 }}
+            animate={{ pathLength: 1 }}
           />
         ))}
         
+        {/* Nodes */}
         {nodes.map((node) => {
           const isVisited = step.visited?.includes(node.id);
           const isCurrent = step.current === node.id;
-          const isHighlighted = step.highlight.includes(node.id);
+          const isInQueue = step.queue?.includes(node.id);
+          const isInStack = step.stack?.includes(node.id);
           
           return (
             <g key={node.id}>
+              {/* Glow effect for current */}
+              {isCurrent && (
+                <motion.circle
+                  cx={node.x}
+                  cy={node.y}
+                  r={32}
+                  fill="none"
+                  stroke="hsl(var(--primary))"
+                  strokeWidth="2"
+                  opacity="0.5"
+                  animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0.2, 0.5] }}
+                  transition={{ repeat: Infinity, duration: 1.5 }}
+                />
+              )}
               <motion.circle
-                cx={node.x + 20}
-                cy={node.y + 20}
-                r={20}
+                cx={node.x}
+                cy={node.y}
+                r={24}
+                className="transition-colors duration-300"
                 fill={
                   isCurrent
                     ? "hsl(var(--primary))"
                     : isVisited
-                    ? "hsl(var(--accent))"
-                    : isHighlighted
-                    ? "hsl(var(--primary) / 0.5)"
+                    ? "hsl(var(--success))"
+                    : isInQueue || isInStack
+                    ? "hsl(var(--warning))"
                     : "hsl(var(--secondary))"
                 }
                 stroke={isCurrent ? "hsl(var(--primary))" : "hsl(var(--border))"}
-                strokeWidth="2"
-                animate={{ scale: isCurrent ? 1.1 : 1 }}
+                strokeWidth="3"
+                animate={{ scale: isCurrent ? 1.15 : 1 }}
+                transition={{ type: "spring", stiffness: 300, damping: 20 }}
               />
               <text
-                x={node.x + 20}
-                y={node.y + 25}
+                x={node.x}
+                y={node.y + 5}
                 textAnchor="middle"
-                fill="hsl(var(--foreground))"
-                fontSize="14"
-                fontWeight="bold"
+                className="text-sm font-bold fill-foreground"
               >
-                {node.id}
+                {node.label}
               </text>
             </g>
           );
         })}
       </svg>
       
-      <div className="flex gap-4 text-sm">
+      {/* Queue/Stack display */}
+      <div className="flex gap-6 text-sm">
         {step.queue !== undefined && (
-          <div className="flex items-center gap-2">
-            <span className="text-muted-foreground">Queue:</span>
+          <div className="flex items-center gap-2 bg-card/50 dark:bg-card/80 px-4 py-2 rounded-lg border border-border">
+            <span className="text-muted-foreground font-medium">Queue:</span>
             <div className="flex gap-1">
               {step.queue.length > 0 ? step.queue.map((n, i) => (
-                <span key={i} className="px-2 py-1 bg-primary/20 rounded text-primary">
+                <motion.span 
+                  key={i} 
+                  className="px-2 py-1 bg-warning/20 rounded text-warning font-mono text-sm"
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                >
                   {n}
-                </span>
-              )) : <span className="text-muted-foreground">empty</span>}
+                </motion.span>
+              )) : <span className="text-muted-foreground italic">empty</span>}
             </div>
           </div>
         )}
         {step.stack !== undefined && (
-          <div className="flex items-center gap-2">
-            <span className="text-muted-foreground">Stack:</span>
+          <div className="flex items-center gap-2 bg-card/50 dark:bg-card/80 px-4 py-2 rounded-lg border border-border">
+            <span className="text-muted-foreground font-medium">Stack:</span>
             <div className="flex gap-1">
               {step.stack.length > 0 ? step.stack.map((n, i) => (
-                <span key={i} className="px-2 py-1 bg-accent/20 rounded text-accent">
+                <motion.span 
+                  key={i} 
+                  className="px-2 py-1 bg-accent/20 rounded text-accent-foreground font-mono text-sm"
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                >
                   {n}
-                </span>
-              )) : <span className="text-muted-foreground">empty</span>}
+                </motion.span>
+              )) : <span className="text-muted-foreground italic">empty</span>}
             </div>
           </div>
         )}
@@ -1172,117 +1339,236 @@ const GraphVisualization = ({ step }: { step: AlgorithmStep }) => {
   );
 };
 
-const LinkedListVisualization = ({ step, head }: { step: AlgorithmStep; head: Algo.ListNode | null }) => {
-  // build linear array of nodes from head
-  const nodes: Array<{ id: number; val: number }> = [];
-  let curr = head;
-  let idx = 0;
-  while (curr) {
-    nodes.push({ id: idx, val: curr.val as number });
-    curr = curr.next as any;
-    idx++;
-  }
+// Linked List Visualization with cycle support
+const LinkedListVisualization = ({ step, hasCycle }: { step: AlgorithmStep; hasCycle: boolean }) => {
+  const nodes = hasCycle 
+    ? [1, 2, 3, 4, 5] // Cycle: 5 points back to 3
+    : [1, 2, 3, 4, 5, 6, 7];
+
+  const slowIdx = step.pointers?.slow ?? -1;
+  const fastIdx = step.pointers?.fast ?? -1;
+  const prevIdx = step.pointers?.prev ?? -1;
+  const currIdx = step.pointers?.curr ?? -1;
 
   return (
-    <div className="flex items-center gap-3">
-      {nodes.map((n, i) => {
-        const isHighlighted = step.highlight.includes(n.val) || step.visited?.includes(n.val) || step.current === n.val || step.highlight.includes(i);
-        return (
-          <div key={i} className="flex items-center gap-2">
-            <motion.div
-              layout
-              transition={{ type: "spring", stiffness: 300, damping: 20 }}
-              className={`px-3 py-2 rounded border-2 ${isHighlighted ? "bg-primary text-primary-foreground border-primary" : "bg-secondary/50 text-muted-foreground border-border"}`}
-              animate={{ scale: isHighlighted ? 1.08 : 1, y: isHighlighted ? -6 : 0 }}
-            >
-              {n.val}
-            </motion.div>
-            {i < nodes.length - 1 && (
-              <svg width="24" height="16" viewBox="0 0 24 16" className="text-muted-foreground">
-                <line x1="0" y1="8" x2="18" y2="8" stroke="currentColor" strokeWidth="2" />
-                <polyline points="12,2 18,8 12,14" fill="none" stroke="currentColor" strokeWidth="2" />
-              </svg>
-            )}
+    <div className="flex flex-col items-center gap-4">
+      <div className="flex items-center gap-2 flex-wrap justify-center">
+        {nodes.map((val, i) => {
+          const isSlow = slowIdx === i;
+          const isFast = fastIdx === i;
+          const isPrev = prevIdx === i;
+          const isCurr = currIdx === i;
+          const isHighlighted = step.highlight.includes(i) || step.found && step.mid === i;
+          const isActive = isSlow || isFast || isPrev || isCurr || isHighlighted;
+
+          return (
+            <div key={i} className="flex items-center gap-1">
+              <motion.div
+                className={`relative px-4 py-3 rounded-lg border-2 font-mono text-lg transition-all duration-300 ${
+                  step.found && step.mid === i
+                    ? "bg-success/20 border-success text-success"
+                    : isActive
+                    ? "bg-primary/20 border-primary text-primary"
+                    : "bg-card dark:bg-card/80 border-border text-foreground"
+                }`}
+                animate={{ 
+                  scale: isActive ? 1.1 : 1, 
+                  y: isActive ? -6 : 0 
+                }}
+                transition={{ type: "spring", stiffness: 300, damping: 20 }}
+              >
+                {val}
+                {/* Pointer labels */}
+                <div className="absolute -top-6 left-1/2 -translate-x-1/2 flex gap-1">
+                  {isSlow && <span className="text-xs bg-info/80 text-info-foreground px-1.5 py-0.5 rounded">S</span>}
+                  {isFast && <span className="text-xs bg-warning/80 text-warning-foreground px-1.5 py-0.5 rounded">F</span>}
+                  {isPrev && <span className="text-xs bg-muted text-muted-foreground px-1.5 py-0.5 rounded">P</span>}
+                  {isCurr && <span className="text-xs bg-primary text-primary-foreground px-1.5 py-0.5 rounded">C</span>}
+                </div>
+              </motion.div>
+              {i < nodes.length - 1 && (
+                <svg width="32" height="16" viewBox="0 0 32 16" className="text-muted-foreground">
+                  <line x1="0" y1="8" x2="24" y2="8" stroke="currentColor" strokeWidth="2" />
+                  <polyline points="18,2 24,8 18,14" fill="none" stroke="currentColor" strokeWidth="2" />
+                </svg>
+              )}
+            </div>
+          );
+        })}
+        {hasCycle && (
+          <div className="ml-2 text-muted-foreground">
+            <svg width="60" height="40" viewBox="0 0 60 40">
+              <path d="M0,20 Q30,-10 50,20" fill="none" stroke="currentColor" strokeWidth="2" strokeDasharray="4,4" />
+              <text x="25" y="38" className="text-xs fill-warning" textAnchor="middle">→ back to 3</text>
+            </svg>
           </div>
-        );
-      })}
+        )}
+      </div>
+      
+      {/* Legend */}
+      <div className="flex gap-4 text-xs text-muted-foreground">
+        {step.pointers?.slow !== undefined && (
+          <div className="flex items-center gap-1">
+            <span className="bg-info/80 text-info-foreground px-1.5 py-0.5 rounded">S</span>
+            <span>Slow</span>
+          </div>
+        )}
+        {step.pointers?.fast !== undefined && (
+          <div className="flex items-center gap-1">
+            <span className="bg-warning/80 text-warning-foreground px-1.5 py-0.5 rounded">F</span>
+            <span>Fast</span>
+          </div>
+        )}
+        {step.pointers?.prev !== undefined && (
+          <div className="flex items-center gap-1">
+            <span className="bg-muted text-muted-foreground px-1.5 py-0.5 rounded">P</span>
+            <span>Prev</span>
+          </div>
+        )}
+        {step.pointers?.curr !== undefined && (
+          <div className="flex items-center gap-1">
+            <span className="bg-primary text-primary-foreground px-1.5 py-0.5 rounded">C</span>
+            <span>Curr</span>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
 
-const TreeVisualization = ({ step, root }: { step: AlgorithmStep; root: Algo.TreeNode | null }) => {
-  if (!root) return <div>No tree</div>;
-  // simple BFS layout positions
-  const nodes: Array<{ id: number | string; x: number; y: number; val: number }> = [];
-  const q: Array<{ node: any; x: number; y: number }> = [{ node: root, x: 160, y: 20 }];
-  while (q.length) {
-    const { node, x, y } = q.shift()!;
-    nodes.push({ id: node.id ?? node.val, x, y, val: node.val });
-    if (node.left) q.push({ node: node.left, x: x - 80, y: y + 80 });
-    if (node.right) q.push({ node: node.right, x: x + 80, y: y + 80 });
-  }
+// Tree Visualization Component
+const TreeVisualization = ({ step }: { step: AlgorithmStep }) => {
+  // Binary tree layout:       1
+  //                         /   \
+  //                        2     3
+  //                       / \   / \
+  //                      4   5 6   7
+  const nodes = [
+    { id: 0, x: 200, y: 30, val: 1 },
+    { id: 1, x: 100, y: 100, val: 2 },
+    { id: 2, x: 300, y: 100, val: 3 },
+    { id: 3, x: 50, y: 170, val: 4 },
+    { id: 4, x: 150, y: 170, val: 5 },
+    { id: 5, x: 250, y: 170, val: 6 },
+    { id: 6, x: 350, y: 170, val: 7 },
+  ];
+
+  const edges = [
+    [0, 1], [0, 2], [1, 3], [1, 4], [2, 5], [2, 6]
+  ];
 
   return (
-    <svg width="360" height="260">
-      {nodes.map((n, i) => (
-        <g key={i}>
-          {/* draw edge to children if they exist */}
-          {i >= 0 && (() => {
-            const node = nodes[i];
-            // find children indices by id mapping
-            const left = nodes.findIndex((x) => x.id === (node.id as number) * 2 + 1);
-            const right = nodes.findIndex((x) => x.id === (node.id as number) * 2 + 2);
-            return (
-              <g>
-                {left !== -1 && <line x1={node.x} y1={node.y + 20} x2={nodes[left].x} y2={nodes[left].y - 20} stroke="hsl(var(--muted-foreground))" strokeWidth="2" />}
-                {right !== -1 && <line x1={node.x} y1={node.y + 20} x2={nodes[right].x} y2={nodes[right].y - 20} stroke="hsl(var(--muted-foreground))" strokeWidth="2" />}
-              </g>
-            );
-          })()}
-          <motion.circle cx={n.x} cy={n.y} r={20} fill={step.visited?.includes(n.id as any) ? "hsl(var(--accent))" : "hsl(var(--secondary))"} stroke="hsl(var(--border))" animate={{ scale: step.visited?.includes(n.id as any) ? 1.08 : 1 }} />
-          <text x={n.x} y={n.y + 5} textAnchor="middle" fill="hsl(var(--foreground))">{n.val}</text>
-        </g>
-      ))}
-    </svg>
+    <div className="flex flex-col items-center gap-4">
+      <svg width="400" height="220" viewBox="0 0 400 220" className="mx-auto">
+        {/* Edges */}
+        {edges.map(([from, to], i) => (
+          <line
+            key={i}
+            x1={nodes[from].x}
+            y1={nodes[from].y + 20}
+            x2={nodes[to].x}
+            y2={nodes[to].y - 20}
+            stroke="hsl(var(--muted-foreground))"
+            strokeWidth="2"
+            opacity="0.4"
+          />
+        ))}
+        
+        {/* Nodes */}
+        {nodes.map((node) => {
+          const isVisited = step.visited?.includes(node.id);
+          const isCurrent = step.current === node.id;
+          
+          return (
+            <g key={node.id}>
+              {isCurrent && (
+                <motion.circle
+                  cx={node.x}
+                  cy={node.y}
+                  r={28}
+                  fill="none"
+                  stroke="hsl(var(--primary))"
+                  strokeWidth="2"
+                  animate={{ scale: [1, 1.2, 1], opacity: [0.6, 0.2, 0.6] }}
+                  transition={{ repeat: Infinity, duration: 1.5 }}
+                />
+              )}
+              <motion.circle
+                cx={node.x}
+                cy={node.y}
+                r={22}
+                fill={
+                  isCurrent
+                    ? "hsl(var(--primary))"
+                    : isVisited
+                    ? "hsl(var(--success))"
+                    : "hsl(var(--secondary))"
+                }
+                stroke="hsl(var(--border))"
+                strokeWidth="2"
+                animate={{ scale: isCurrent ? 1.1 : 1 }}
+                transition={{ type: "spring", stiffness: 300, damping: 20 }}
+              />
+              <text
+                x={node.x}
+                y={node.y + 5}
+                textAnchor="middle"
+                className="text-sm font-bold fill-foreground"
+              >
+                {node.val}
+              </text>
+            </g>
+          );
+        })}
+      </svg>
+      
+      {/* Queue display for level order */}
+      {step.queue !== undefined && (
+        <div className="flex items-center gap-2 bg-card/50 dark:bg-card/80 px-4 py-2 rounded-lg border border-border">
+          <span className="text-muted-foreground font-medium text-sm">Queue:</span>
+          <div className="flex gap-1">
+            {step.queue.length > 0 ? step.queue.map((n, i) => (
+              <span key={i} className="px-2 py-1 bg-warning/20 rounded text-warning font-mono text-sm">
+                {typeof n === 'number' ? nodes[n]?.val ?? n : n}
+              </span>
+            )) : <span className="text-muted-foreground italic text-sm">empty</span>}
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 
-const CodePanel = ({ 
-  code, 
-  highlightedLines 
-}: { 
-  code: string[]; 
-  highlightedLines: number[];
-}) => {
-  
+// Code Panel Component
+const CodePanel = ({ code, highlightedLines }: { code: string[]; highlightedLines: number[] }) => {
   return (
-    <div className="bg-card/80 border border-border rounded-lg overflow-hidden" role="region" aria-labelledby="pseudocode-heading">
-      <div className="flex items-center gap-2 px-4 py-2 bg-secondary/50 border-b border-border">
+    <div className="bg-card dark:bg-card/90 border border-border rounded-xl overflow-hidden shadow-lg">
+      <div className="flex items-center gap-2 px-4 py-2.5 bg-muted/50 dark:bg-muted/30 border-b border-border">
         <Code className="w-4 h-4 text-primary" />
-        <span id="pseudocode-heading" className="text-sm font-medium">Pseudocode</span>
+        <span className="text-sm font-medium">Pseudocode</span>
       </div>
-      <div className="p-4 overflow-x-auto max-h-[300px] overflow-y-auto">
+      <div className="p-4 overflow-x-auto max-h-[320px] overflow-y-auto">
         <pre className="text-sm font-mono">
           {code.map((line, i) => {
             const isHighlighted = highlightedLines.includes(i);
             return (
               <motion.div
                 key={i}
-                className={`px-2 py-0.5 rounded transition-all ${
+                className={`px-3 py-1 rounded transition-all duration-300 ${
                   isHighlighted 
-                    ? "bg-primary/20 border-l-2 border-primary text-foreground" 
+                    ? "bg-primary/20 dark:bg-primary/30 border-l-3 border-primary text-foreground font-medium" 
                     : "text-muted-foreground"
                 }`}
                 animate={{
                   backgroundColor: isHighlighted ? "hsl(var(--primary) / 0.2)" : "transparent",
+                  x: isHighlighted ? 4 : 0,
                 }}
+                transition={{ duration: 0.2 }}
               >
-                <span className="inline-block w-6 text-right mr-3 text-muted-foreground/50 select-none">
+                <span className="inline-block w-6 text-right mr-4 text-muted-foreground/50 select-none text-xs">
                   {i + 1}
                 </span>
-                <span className={isHighlighted ? "text-foreground" : ""}>
-                  {line || " "}
-                </span>
+                <span>{line || " "}</span>
               </motion.div>
             );
           })}
@@ -1292,39 +1578,37 @@ const CodePanel = ({
   );
 };
 
+// Main Visualizer Component
 export const Visualizer = () => {
   const [selectedAlgo, setSelectedAlgo] = useState("Bubble Sort");
   const [step, setStep] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [speed, setSpeed] = useState(1); // 0.5x to 3x
-  const [selectedApproach, setSelectedApproach] = useState<string>("Default");
-  const [openSection, setOpenSection] = useState<string | null>(DEFAULT_OPEN_SECTION);
-  const [epoch, setEpoch] = useState(0); // bump to force re-generation of steps/inputs
+  const [speed, setSpeed] = useState(1);
+  const [openSection, setOpenSection] = useState<string | null>("Sorting");
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const steps = useMemo(() => {
-    // First try the algorithms module adapter; fallback to built-in generators
-    const modSteps = generateFromAlgo(selectedAlgo);
-    if (modSteps && modSteps.length > 0) return modSteps;
     switch (selectedAlgo) {
-      case "Bubble Sort":
-        return generateBubbleSortSteps();
-      case "Quick Sort":
-        return generateQuickSortSteps();
-      case "Merge Sort":
-        return generateMergeSortSteps();
-      case "Binary Search":
-        return generateBinarySearchSteps();
-      case "BFS":
-        return generateBFSSteps();
-      case "DFS":
-        return generateDFSSteps();
-      default:
-        return generateBubbleSortSteps();
+      case "Bubble Sort": return generateBubbleSortSteps();
+      case "Selection Sort": return generateSelectionSortSteps();
+      case "Insertion Sort": return generateInsertionSortSteps();
+      case "Merge Sort": return generateMergeSortSteps();
+      case "Quick Sort": return generateQuickSortSteps();
+      case "Linear Search": return generateLinearSearchSteps();
+      case "Binary Search": return generateBinarySearchSteps();
+      case "BFS": return generateBFSSteps();
+      case "DFS": return generateDFSSteps();
+      case "Reverse Linked List": return generateReverseLinkedListSteps();
+      case "Cycle Detection": return generateCycleDetectionSteps();
+      case "Find Middle": return generateFindMiddleSteps();
+      case "Pre-Order": return generatePreOrderSteps();
+      case "In-Order": return generateInOrderSteps();
+      case "Post-Order": return generatePostOrderSteps();
+      case "Level Order": return generateLevelOrderSteps();
+      default: return generateBubbleSortSteps();
     }
-  }, [selectedAlgo, epoch]);
+  }, [selectedAlgo]);
 
-  // determine visualization mode for selected algorithm
   const getVisualType = (name: string) => {
     if (algorithmSections["Graphs"].includes(name)) return "graph";
     if (algorithmSections["Linked List"].includes(name)) return "linkedlist";
@@ -1333,25 +1617,12 @@ export const Visualizer = () => {
   };
 
   const visualType = getVisualType(selectedAlgo);
-
-  // input generators for each visual type (hoisted as functions so they are available earlier)
-  // input helpers are provided at module scope
-
-  const currentInput = useMemo(() => getInputForAlgorithm(selectedAlgo), [selectedAlgo, epoch]);
-
   const currentStep = steps[step] || steps[0];
-  const isGraphAlgo = selectedAlgo === "BFS" || selectedAlgo === "DFS";
-
-  // reset approach when algorithm changes
-  useEffect(() => {
-    const names = Object.keys(algorithmCode[selectedAlgo] || {});
-    setSelectedApproach(names[0] || "Default");
-  }, [selectedAlgo]);
 
   // Auto-play logic
   useEffect(() => {
     if (isPlaying) {
-      const delay = 1000 / speed;
+      const delay = 1200 / speed;
       intervalRef.current = setInterval(() => {
         setStep(prev => {
           if (prev >= steps.length - 1) {
@@ -1367,26 +1638,25 @@ export const Visualizer = () => {
     };
   }, [isPlaying, speed, steps.length]);
 
-  // Keyboard shortcuts: Space toggles play/pause, arrows navigate, 'r' resets
+  // Keyboard shortcuts
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.code === "Space") {
         e.preventDefault();
-        setIsPlaying((p) => !p);
+        setIsPlaying(p => !p);
       }
       if (e.key === "ArrowRight") {
-        setStep((s) => Math.min(steps.length - 1, s + 1));
+        setStep(s => Math.min(steps.length - 1, s + 1));
         setIsPlaying(false);
       }
       if (e.key === "ArrowLeft") {
-        setStep((s) => Math.max(0, s - 1));
+        setStep(s => Math.max(0, s - 1));
         setIsPlaying(false);
       }
       if (e.key.toLowerCase() === "r") {
         handleReset();
       }
     };
-
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [steps.length]);
@@ -1394,8 +1664,6 @@ export const Visualizer = () => {
   const handleReset = () => {
     setStep(0);
     setIsPlaying(false);
-    // force re-generate steps and inputs to ensure mutated structures are recreated
-    setEpoch((e) => e + 1);
   };
 
   const handleAlgoChange = (algo: string) => {
@@ -1424,53 +1692,48 @@ export const Visualizer = () => {
         </motion.div>
 
         <div className="grid lg:grid-cols-4 gap-6">
-          {/* Algorithm Selection */}
+          {/* Algorithm Selection Panel */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
-            className="glass-card p-4 rounded-xl"
+            className="bg-card dark:bg-card/90 border border-border rounded-xl p-4 shadow-lg"
           >
             <h3 className="text-lg font-semibold mb-4">Select Algorithm</h3>
-            <div className="space-y-4">
+            <div className="space-y-3">
               {Object.entries(algorithmSections).map(([section, list]) => {
                 const isOpen = openSection === section;
                 return (
                   <div key={section}>
                     <button
-                      onClick={() => setOpenSection((prev) => (prev === section ? null : section))}
-                      aria-expanded={isOpen}
-                      className="w-full flex items-center justify-between px-2 py-1 rounded text-xs font-semibold text-muted-foreground mb-2 hover:bg-secondary/20"
+                      onClick={() => setOpenSection(prev => prev === section ? null : section)}
+                      className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted/50 transition-colors"
                     >
                       <span>{section}</span>
-                      <ChevronRight className={`w-4 h-4 transform transition-transform ${isOpen ? 'rotate-90' : ''}`} />
+                      <ChevronRight className={`w-4 h-4 transition-transform duration-200 ${isOpen ? 'rotate-90' : ''}`} />
                     </button>
 
                     <AnimatePresence initial={false}>
                       {isOpen && (
                         <motion.div
-                          key={`${section}-content`}
                           initial={{ height: 0, opacity: 0 }}
                           animate={{ height: 'auto', opacity: 1 }}
                           exit={{ height: 0, opacity: 0 }}
-                          transition={{ duration: 0.22, ease: 'easeInOut' }}
+                          transition={{ duration: 0.2 }}
                           className="overflow-hidden"
                         >
-                          <div className="space-y-2 px-1 pb-2 pt-1">
+                          <div className="space-y-1 pl-2 pt-1">
                             {list.map((algo) => (
                               <button
                                 key={algo}
                                 onClick={() => handleAlgoChange(algo)}
                                 className={`w-full text-left px-3 py-2 rounded-lg transition-all text-sm ${
                                   selectedAlgo === algo
-                                    ? "bg-primary text-primary-foreground"
-                                    : "bg-secondary/50 hover:bg-secondary text-foreground"
+                                    ? "bg-primary text-primary-foreground font-medium"
+                                    : "hover:bg-muted/50 text-foreground"
                                 }`}
                               >
-                                <div className="flex items-center justify-between">
-                                  <span className="font-medium">{algo}</span>
-                                  {selectedAlgo === algo && <ChevronRight className="w-4 h-4" />}
-                                </div>
+                                {algo}
                               </button>
                             ))}
                           </div>
@@ -1483,19 +1746,17 @@ export const Visualizer = () => {
             </div>
           </motion.div>
 
-          {/* Visualization Area */}
+          {/* Visualization Panel */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            id="visualizer-board"
-            className="lg:col-span-2 glass-card p-6 rounded-xl"
+            className="lg:col-span-2 bg-card dark:bg-card/90 border border-border rounded-xl p-6 shadow-lg"
           >
-            <div className="flex items-center justify-between mb-4">
+            {/* Header with controls */}
+            <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-semibold">{selectedAlgo}</h3>
               <div className="flex items-center gap-4">
-                <ThemeToggle scope="element" elementId="visualizer-board" />
-                {/* Speed Control */}
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-muted-foreground">Speed:</span>
                   <Slider
@@ -1509,17 +1770,10 @@ export const Visualizer = () => {
                   <span className="text-xs font-mono w-8">{speed}x</span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <Button variant="ghost" size="icon" onClick={handleReset} aria-label="Reset visualization" title="Reset">
+                  <Button variant="ghost" size="icon" onClick={handleReset}>
                     <RotateCcw className="w-4 h-4" />
                   </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="icon"
-                    onClick={() => setIsPlaying(!isPlaying)}
-                    aria-pressed={isPlaying}
-                    aria-label={isPlaying ? "Pause animation" : "Play animation"}
-                    title={isPlaying ? "Pause" : "Play"}
-                  >
+                  <Button variant="ghost" size="icon" onClick={() => setIsPlaying(!isPlaying)}>
                     {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
                   </Button>
                   <Button 
@@ -1527,8 +1781,6 @@ export const Visualizer = () => {
                     size="icon"
                     onClick={() => setStep(Math.min(steps.length - 1, step + 1))}
                     disabled={isPlaying}
-                    aria-label="Advance one step"
-                    title="Next step"
                   >
                     <SkipForward className="w-4 h-4" />
                   </Button>
@@ -1536,25 +1788,20 @@ export const Visualizer = () => {
               </div>
             </div>
 
-            {/* Visualization */}
-            <div className="min-h-[200px] flex items-center justify-center mb-6">
-              {visualType === "graph" && (
-                <GraphVisualization step={currentStep} />
-              )}
-
+            {/* Visualization Area */}
+            <div className="min-h-[280px] flex items-center justify-center mb-6">
+              {visualType === "graph" && <GraphVisualization step={currentStep} />}
               {visualType === "linkedlist" && (
-                <LinkedListVisualization step={currentStep} head={(currentInput.data as any) || null} />
+                <LinkedListVisualization 
+                  step={currentStep} 
+                  hasCycle={selectedAlgo === "Cycle Detection"} 
+                />
               )}
-
-              {visualType === "tree" && (
-                <TreeVisualization step={currentStep} root={(currentInput.data as any) || null} />
-              )}
-
+              {visualType === "tree" && <TreeVisualization step={currentStep} />}
               {visualType === "array" && (
                 <div className="w-full">
-                  {/* Bar Chart Visualization */}
-                  <div className="flex items-end justify-center gap-1 md:gap-2 h-48 mb-4 px-4">
-                    {(currentStep.array || (currentInput.type === "array" ? (currentInput.data as number[]) : [64, 34, 25, 12, 22, 11, 90])).map((val, i) => {
+                  <div className="flex items-end justify-center gap-2 md:gap-3 h-52 mb-4 px-4">
+                    {(currentStep.array || [64, 34, 25, 12, 22, 11, 90]).map((val, i) => {
                       const isHighlighted = currentStep.highlight.includes(i);
                       const isSorted = currentStep.sorted?.includes(i);
                       const isPivot = currentStep.pivot === i;
@@ -1573,52 +1820,45 @@ export const Visualizer = () => {
                           className="relative flex flex-col items-center"
                           initial={{ opacity: 0, y: 20 }}
                           animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: i * 0.05 }}
+                          transition={{ delay: i * 0.03, type: "spring", stiffness: 200 }}
                         >
-                          {/* Bar */}
                           <motion.div
-                            className={`w-8 md:w-12 rounded-t-lg relative overflow-hidden transition-all duration-300 ${
+                            className={`w-10 md:w-14 rounded-t-lg relative overflow-hidden transition-colors duration-300 ${
                               isFound
-                                ? "bg-gradient-to-t from-green-600 to-green-400"
+                                ? "bg-gradient-to-t from-success to-success/70"
                                 : isPivot
-                                ? "bg-gradient-to-t from-accent to-accent/70"
+                                ? "bg-gradient-to-t from-warning to-warning/70"
                                 : isSorted
-                                ? "bg-gradient-to-t from-green-600/80 to-green-400/80"
+                                ? "bg-gradient-to-t from-success/80 to-success/50"
                                 : isHighlighted
                                 ? "bg-gradient-to-t from-primary to-primary/70"
                                 : isInRange
-                                ? "bg-gradient-to-t from-primary/40 to-primary/20"
-                                : "bg-gradient-to-t from-secondary to-secondary/50"
+                                ? "bg-gradient-to-t from-info/50 to-info/30"
+                                : "bg-gradient-to-t from-muted to-muted/50"
                             }`}
-                            style={{ height: `${Math.max(heightPercent * 1.6, 20)}px` }}
+                            style={{ height: `${Math.max(heightPercent * 1.8, 24)}px` }}
                             animate={{
-                              scale: isHighlighted || isPivot || isFound ? 1.05 : 1,
-                              y: isHighlighted ? -8 : 0,
+                              scale: isHighlighted || isPivot || isFound ? 1.08 : 1,
+                              y: isHighlighted || isPivot ? -10 : 0,
                             }}
-                            transition={{ type: "spring", stiffness: 300 }}
+                            transition={{ type: "spring", stiffness: 300, damping: 20 }}
                           >
-                            {/* Shine effect */}
-                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-                            
-                            {/* Glow for highlighted */}
+                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent" />
                             {(isHighlighted || isPivot || isFound) && (
                               <motion.div
-                                className={`absolute inset-0 ${
-                                  isFound ? "bg-green-400/30" : isPivot ? "bg-accent/30" : "bg-primary/30"
-                                }`}
-                                animate={{ opacity: [0.3, 0.6, 0.3] }}
+                                className="absolute inset-0 bg-white/20"
+                                animate={{ opacity: [0.2, 0.4, 0.2] }}
                                 transition={{ repeat: Infinity, duration: 1 }}
                               />
                             )}
                           </motion.div>
                           
-                          {/* Value label */}
                           <motion.span 
-                            className={`mt-2 text-xs md:text-sm font-mono font-semibold ${
+                            className={`mt-2 text-sm font-mono font-semibold ${
                               isHighlighted || isPivot || isFound 
                                 ? "text-primary" 
                                 : isSorted 
-                                ? "text-green-400" 
+                                ? "text-success" 
                                 : "text-muted-foreground"
                             }`}
                             animate={{ scale: isHighlighted ? 1.1 : 1 }}
@@ -1626,31 +1866,28 @@ export const Visualizer = () => {
                             {val}
                           </motion.span>
                           
-                          {/* Index indicator */}
-                          <span className="text-[10px] text-muted-foreground/50 mt-1">
-                            [{i}]
-                          </span>
+                          <span className="text-[10px] text-muted-foreground/60 mt-0.5">[{i}]</span>
                         </motion.div>
                       );
                     })}
                   </div>
                   
                   {/* Legend */}
-                  <div className="flex justify-center gap-4 md:gap-6 flex-wrap mt-4 px-4">
+                  <div className="flex justify-center gap-4 md:gap-6 flex-wrap mt-2 px-4">
                     <div className="flex items-center gap-2">
                       <div className="w-4 h-4 rounded bg-gradient-to-t from-primary to-primary/70" />
-                      <span className="text-xs text-muted-foreground">Comparing</span>
+                      <span className="text-xs text-muted-foreground">Active</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 rounded bg-gradient-to-t from-green-600/80 to-green-400/80" />
+                      <div className="w-4 h-4 rounded bg-gradient-to-t from-success/80 to-success/50" />
                       <span className="text-xs text-muted-foreground">Sorted</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 rounded bg-gradient-to-t from-accent to-accent/70" />
+                      <div className="w-4 h-4 rounded bg-gradient-to-t from-warning to-warning/70" />
                       <span className="text-xs text-muted-foreground">Pivot</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 rounded bg-gradient-to-t from-secondary to-secondary/50" />
+                      <div className="w-4 h-4 rounded bg-gradient-to-t from-muted to-muted/50" />
                       <span className="text-xs text-muted-foreground">Unsorted</span>
                     </div>
                   </div>
@@ -1658,19 +1895,20 @@ export const Visualizer = () => {
               )}
             </div>
 
-            {/* Step description (announced to assistive tech) */}
-            <div className="bg-secondary/50 rounded-lg p-3 mb-4">
-              <p className="text-xs font-mono text-center" aria-live="polite" aria-atomic="true" role="status">
+            {/* Step description */}
+            <div className="bg-muted/50 dark:bg-muted/30 rounded-lg p-4 mb-4">
+              <p className="text-sm font-medium text-center">
                 Step {step + 1}/{steps.length}: {currentStep.description}
               </p>
             </div>
 
-            {/* Progress */}
+            {/* Progress bar and controls */}
             <div className="flex items-center gap-4">
-              <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
+              <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
                 <motion.div
-                  className="h-full bg-gradient-to-r from-primary to-accent"
+                  className="h-full bg-gradient-to-r from-primary to-primary/70"
                   animate={{ width: `${((step + 1) / steps.length) * 100}%` }}
+                  transition={{ duration: 0.2 }}
                 />
               </div>
               <div className="flex gap-2">
@@ -1683,7 +1921,7 @@ export const Visualizer = () => {
                   Prev
                 </Button>
                 <Button
-                  variant="hero"
+                  variant="default"
                   size="sm"
                   onClick={() => setStep(Math.min(steps.length - 1, step + 1))}
                   disabled={step === steps.length - 1}
@@ -1700,26 +1938,8 @@ export const Visualizer = () => {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
           >
-            {/* Approach selector + pseudocode panel */}
-            <div className="mb-3 flex items-center justify-between gap-2">
-              <label htmlFor="approach-select" className="text-sm text-muted-foreground">Pseudocode</label>
-              <div>
-                <select
-                  id="approach-select"
-                  aria-label="Select pseudocode approach"
-                  value={selectedApproach}
-                  onChange={(e) => setSelectedApproach(e.target.value)}
-                  className="bg-secondary/50 border border-border rounded px-2 py-1 text-sm"
-                >
-                  {(Object.keys(algorithmCode[selectedAlgo] || {})).map((name) => (
-                    <option key={name} value={name}>{name}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
             <CodePanel
-              code={(algorithmCode[selectedAlgo] && algorithmCode[selectedAlgo][selectedApproach]) || (algorithmCode[selectedAlgo] && algorithmCode[selectedAlgo].Default) || []}
+              code={algorithmCode[selectedAlgo] || []}
               highlightedLines={currentStep.codeLine || []}
             />
           </motion.div>
