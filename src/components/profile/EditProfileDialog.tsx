@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { motion } from 'framer-motion';
-import { X, Phone, Calendar, FileText, Check } from 'lucide-react';
+import { Phone, Calendar, Check } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -12,8 +11,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/contexts/AuthContext';
-import { avatarLibrary, avatarCategories, getAvatarEmoji } from '@/data/avatars';
-
+import { avatarLibrary, avatarCategories } from '@/data/avatars';
+import { AvatarThumbnail } from './AvatarDisplay';
 interface EditProfileDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -153,25 +152,19 @@ export const EditProfileDialog = ({ open, onOpenChange, onSuccess }: EditProfile
                   {avatarLibrary
                     .filter((avatar) => avatar.category === category.key)
                     .map((avatar) => (
-                      <motion.button
-                        key={avatar.key}
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => setSelectedAvatar(avatar.key)}
-                        className={`w-14 h-14 rounded-xl flex items-center justify-center text-2xl transition-all ${
-                          selectedAvatar === avatar.key
-                            ? 'bg-primary/20 border-2 border-primary ring-2 ring-primary/30'
-                            : 'bg-muted hover:bg-muted/80 border-2 border-transparent'
-                        }`}
-                        title={avatar.name}
-                      >
-                        {avatar.emoji}
+                      <div key={avatar.key} className="relative" title={avatar.name}>
+                        <AvatarThumbnail
+                          avatarKey={avatar.key}
+                          avatar={avatar}
+                          isSelected={selectedAvatar === avatar.key}
+                          onClick={() => setSelectedAvatar(avatar.key)}
+                        />
                         {selectedAvatar === avatar.key && (
-                          <div className="absolute -top-1 -right-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center">
+                          <div className="absolute -top-1 -right-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center z-10">
                             <Check className="w-3 h-3 text-primary-foreground" />
                           </div>
                         )}
-                      </motion.button>
+                      </div>
                     ))}
                 </div>
               </div>

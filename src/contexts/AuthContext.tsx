@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { getRandomAvatarKey } from '@/data/avatars';
 
 interface Profile {
   id: string;
@@ -112,6 +113,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const redirectUrl = `${window.location.origin}/`;
     
+    // Generate random avatar based on email
+    const randomAvatarKey = getRandomAvatarKey(email);
+    
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -119,6 +123,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         emailRedirectTo: redirectUrl,
         data: {
           username,
+          avatar_key: randomAvatarKey,
         },
       },
     });
