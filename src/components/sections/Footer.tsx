@@ -69,10 +69,10 @@ export const Footer = () => {
 
         <div className="border-t border-border/50 mt-12 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-sm text-muted-foreground">
-            © 2024 DSA Viz. All rights reserved.
+            © 2026 DSA Viz. All rights reserved.
           </p>
           <p className="text-sm text-muted-foreground">
-            Made with ❤️ for developers worldwide
+            Made with ❤️ for learners worldwide
           </p>
         </div>
       </div>
