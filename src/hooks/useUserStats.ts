@@ -152,26 +152,20 @@ export const useUserStats = () => {
   const fetchHeatmapData = async () => {
     if (!user) return;
 
-    // Get problem solves grouped by date for last year
+    // Get time spent per day for last year
     const oneYearAgo = new Date();
     oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
 
     const { data } = await supabase
-      .from('problem_solve_history')
-      .select('solved_at')
+      .from('daily_time_tracking')
+      .select('date, time_spent_seconds')
       .eq('user_id', user.id)
-      .gte('solved_at', oneYearAgo.toISOString());
+      .gte('date', oneYearAgo.toISOString().split('T')[0]);
 
     if (data) {
-      const countByDate: Record<string, number> = {};
-      data.forEach((item: { solved_at: string }) => {
-        const date = item.solved_at.split('T')[0];
-        countByDate[date] = (countByDate[date] || 0) + 1;
-      });
-
-      const heatmap = Object.entries(countByDate).map(([date, count]) => ({
-        date,
-        count,
+      const heatmap = data.map((item: { date: string; time_spent_seconds: number }) => ({
+        date: item.date,
+        count: Math.round(item.time_spent_seconds / 60), // Convert to minutes for display
       }));
       setHeatmapData(heatmap);
     }
