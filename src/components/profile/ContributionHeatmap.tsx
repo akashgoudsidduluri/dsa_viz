@@ -93,9 +93,11 @@ export const ContributionHeatmap = ({ data }: ContributionHeatmapProps) => {
       className="glass-card p-4 space-y-3"
     >
       <div className="flex items-center justify-between">
-        <h3 className="font-medium">Contribution Heatmap</h3>
+        <h3 className="font-medium">Activity Heatmap</h3>
         <span className="text-sm text-muted-foreground">
-          {totalContributions} problems solved in the last year
+          {totalContributions >= 60 
+            ? `${Math.round(totalContributions / 60)}h ${totalContributions % 60}m` 
+            : `${totalContributions}m`} time spent in the last year
         </span>
       </div>
 
@@ -134,7 +136,7 @@ export const ContributionHeatmap = ({ data }: ContributionHeatmapProps) => {
                 <div
                   key={dayIndex}
                   className={`w-3 h-3 rounded-sm ${getColor(day.count)} transition-colors hover:ring-2 hover:ring-primary/50`}
-                  title={`${day.date.toLocaleDateString()}: ${day.count} problems`}
+                  title={`${day.date.toLocaleDateString()}: ${day.count >= 60 ? `${Math.floor(day.count / 60)}h ${day.count % 60}m` : `${day.count}m`}`}
                 />
               ))}
             </div>
