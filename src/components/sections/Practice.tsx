@@ -105,9 +105,13 @@ export const Practice = () => {
 
   const filtered = useMemo(() => {
     return initialProblems.filter((p) => {
-      // search
+      // search - matches title or problem number
       const q = query.trim().toLowerCase();
-      if (q && !p.title.toLowerCase().includes(q)) return false;
+      if (q) {
+        const matchesTitle = p.title.toLowerCase().includes(q);
+        const matchesId = p.id.toString() === q || p.id.toString().startsWith(q);
+        if (!matchesTitle && !matchesId) return false;
+      }
 
       // difficulty
       if (difficultyFilter !== "All" && p.difficulty !== difficultyFilter) return false;
@@ -166,8 +170,8 @@ export const Practice = () => {
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <input
               type="text"
-              placeholder="Search problems..."
-              aria-label="Search problems"
+              placeholder="Search by name or #number..."
+              aria-label="Search problems by name or number"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-2 bg-secondary/50 border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary"
