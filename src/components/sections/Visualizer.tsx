@@ -364,17 +364,20 @@ const generateInsertionSortSteps = (): AlgorithmStep[] => {
       codeLine: [2, 3],
     });
     
+    // Find the correct position for key by shifting larger elements
+    let insertPos = i;
     while (j >= 0 && arr[j] > key) {
       steps.push({
-        description: `arr[${j}]=${arr[j]} > ${key}, shifting right`,
+        description: `arr[${j}]=${arr[j]} > ${key}, will shift right`,
         highlight: [j, j + 1],
         array: [...arr],
         sorted: Array.from({ length: i }, (_, k) => k),
         codeLine: [4, 5],
       });
       arr[j + 1] = arr[j];
+      insertPos = j;
       steps.push({
-        description: `Shifted ${arr[j]} to position ${j + 1}`,
+        description: `Shifted ${arr[j + 1]} from position ${j} to ${j + 1}`,
         highlight: [j + 1],
         array: [...arr],
         sorted: Array.from({ length: i }, (_, k) => k),
@@ -383,10 +386,11 @@ const generateInsertionSortSteps = (): AlgorithmStep[] => {
       j--;
     }
     
-    arr[j + 1] = key;
+    // Insert the key at the correct position
+    arr[insertPos] = key;
     steps.push({
-      description: `Inserted ${key} at position ${j + 1}`,
-      highlight: [j + 1],
+      description: `Inserted key ${key} at position ${insertPos}`,
+      highlight: [insertPos],
       array: [...arr],
       sorted: Array.from({ length: i + 1 }, (_, k) => k),
       codeLine: [8],
